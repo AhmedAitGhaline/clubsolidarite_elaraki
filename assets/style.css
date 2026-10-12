@@ -6,3 +6,20 @@ img{image-rendering:auto;-webkit-backface-visibility:hidden;backface-visibility:
 .event-image img{transform:translateZ(0)}
 @media (min-width:1200px){.hero{background-position:center 46%}}
 @media (max-width:700px){.hero{background-position:62% center}.hero:before{background:linear-gradient(90deg,rgba(3,35,79,.94),rgba(5,44,104,.67) 68%,rgba(5,44,104,.38))}}
+
+
+/* v2: real iconography, responsive event carousel and account entry */
+.impact-icon svg,.domain-icon svg,.account-strip svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.8}
+.event-carousel-controls{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:12px}
+.event-carousel-controls .event-grid{overflow:hidden;display:flex;gap:22px;scroll-behavior:smooth;scroll-snap-type:x mandatory;padding:4px 2px 18px}
+.event-carousel-controls .event-card{flex:0 0 calc((100% - 44px)/3);scroll-snap-align:start}
+.carousel-arrow{width:42px;height:42px;border:1px solid #d7e1ef;border-radius:50%;background:#fff;color:#123d78;display:grid;place-items:center;cursor:pointer;box-shadow:0 5px 18px #0c2e6010}
+.carousel-arrow:hover{background:#0b4da8;color:white}
+.carousel-arrow svg{width:22px;height:22px}
+.event-carousel-controls .event-grid::-webkit-scrollbar{display:none}
+.account-strip{display:flex;align-items:center;gap:22px;justify-content:space-between;padding-top:38px;padding-bottom:38px;background:#f3f7fd;border-radius:18px;margin-top:36px;margin-bottom:36px}
+.account-strip>div{max-width:610px}.account-strip h2{margin:10px 0}.account-strip p{margin:0;color:#58677d}.account-strip .button{white-space:nowrap}
+@media(max-width:900px){.event-carousel-controls .event-card{flex:0 0 calc((100% - 22px)/2)}}
+@media(max-width:600px){.event-carousel-controls{grid-template-columns:34px minmax(0,1fr) 34px;gap:6px}.carousel-arrow{width:32px;height:32px}.event-carousel-controls .event-card{flex:0 0 100%}.account-strip{display:grid;grid-template-columns:1fr;padding:24px}.account-strip .button{justify-self:start}}
+
+.upcoming-announcement{display:inline-flex;gap:8px;align-items:center;max-width:680px;margin:10px 0 12px;padding:9px 13px;border:1px solid #ffffff55;border-radius:10px;background:#092b58b8;color:#fff;font-size:14px;line-height:1.45}.upcoming-announcement svg{width:18px;height:18px;flex-shrink:0}.published-projects{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:22px}.published-project-card{border:1px solid #e1e8f2;border-radius:14px;overflow:hidden;background:white}.published-project-card img{width:100%;height:170px;object-fit:cover}.published-project-card div{padding:15px}.published-project-card h3{margin:0 0 8px}.published-project-card p{margin:0;color:#5c6b80}

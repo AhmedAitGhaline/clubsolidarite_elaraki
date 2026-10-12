@@ -40,3 +40,23 @@ Téléversez le dossier du projet dans un dépôt GitHub et connectez-le à Clou
 
 ## Références historiques
 Les descriptions reprennent et reformulent les fichiers texte présents dans l’archive fournie. Les photographies ont été copiées sans écraser les originaux fournis. L’événement « ELARAKI’s Got Talent » est daté « Mars 2019 » car la date de tenue exacte n’est pas confirmée dans le texte.
+
+
+## Mise à jour v2 — comptes élèves et administration
+
+Cette version ajoute des vues d'administration pour membres, candidatures, projets, événements, chat global du bureau, galerie et paramètres; icônes Lucide nommées; carrousel des événements; inscription avec adresse institutionnelle; profils scolaires et avatars; téléversement de couvertures.
+
+### Migration Supabase requise
+1. Ouvrir Supabase → SQL Editor.
+2. Exécuter `supabase/migration-v2.sql` **après** `supabase/schema.sql`.
+3. Vérifier que l'URL et la clé publique sont renseignées dans `assets/config.js`.
+4. Vérifier Authentication → URL Configuration pour que l'URL de redirection de votre domaine soit autorisée.
+5. Les élèves s'inscrivent via `register.html`; les administrateurs continuent d'utiliser `admin/login.html`.
+
+Les comptes étudiants doivent utiliser `@elaraki.ac.ma`. Les photos de profil sont limitées à 2 Mo (JPG/PNG/WebP); les médias du club à 5 Mo. Les fichiers sont stockés dans les buckets `profile-photos` et `club-media`.
+
+### Notes importantes
+- Le chat global est accessible aux profils `admin` et `editor`.
+- La galerie rassemble les couvertures des projets/événements publiés; elle ne remplace pas une gestion de photos séparées.
+- Les annonces et les projets sont lus depuis Supabase; les événements historiques déjà fournis dans `assets/events-data.js` restent issus des archives statiques.
+- Après exécution de la migration, testez les politiques RLS avec un compte élève et un compte administrateur avant de publier des données réelles.
