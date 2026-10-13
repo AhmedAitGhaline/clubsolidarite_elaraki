@@ -68,3 +68,11 @@ Les comptes étudiants doivent utiliser `@elaraki.ac.ma`. Les photos de profil s
 - Candidatures avec vue détaillée et actions adaptées au statut : seules les candidatures en attente peuvent être acceptées/refusées ; les candidatures traitées peuvent être supprimées.
 - Accès élève via une icône de navigation et pages séparées de connexion et de création de compte.
 - Galerie retirée de la navigation administrative.
+
+## Mise à jour v3 — administration redessinée
+- Admin : nouveau design (mêmes bleus que le site), tableau de bord pleine largeur, lignes d'élèves compactes, statuts colorés (Accepté vert, Refusé rouge, En attente marron), notifications (toasts) et fenêtres de confirmation pour chaque action.
+- Candidatures : « Voir la candidature » toujours visible ; une candidature acceptée ne peut plus être refusée (seule l'icône corbeille reste).
+- Paramètres : onglet « Paramètres utilisateur » (nom, e-mail, mot de passe) accessible aussi aux éditeurs, et depuis le menu du profil en haut à droite.
+- Section galerie supprimée de l'admin.
+- Site public : icône utilisateur dans le header, pages Connexion / Inscription séparées, annonce du prochain événement mise en avant.
+- Aucun changement Supabase (aucun SQL à relancer).

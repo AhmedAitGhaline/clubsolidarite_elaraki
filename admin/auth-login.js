@@ -5,7 +5,7 @@ const status = document.querySelector('#loginStatus');
 const notice = document.querySelector('#authNotice');
 const submit = form?.querySelector('button[type="submit"], button:not([type])');
 function show(message, error = true) {
-  if (status) { status.textContent = message; status.style.color = error ? '#b42318' : '#167647'; }
+  if (status) { status.textContent = message; status.style.color = error ? '#b91c1c' : '#15803d'; }
 }
 if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
   show('Configuration manquante : vérifiez assets/config.js (URL du projet et clé publique).');
@@ -42,7 +42,7 @@ if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
     } catch (err) {
       show(err?.message || 'Échec de la connexion. Vérifiez votre e-mail, votre mot de passe et la configuration Supabase.');
     } finally {
-      if (submit) { submit.disabled = false; submit.textContent = 'Se connecter →'; }
+      if (submit) { submit.disabled = false; submit.textContent = 'Se connecter'; }
     }
   });
 }

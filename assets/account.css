@@ -1,2 +1,27 @@
-
-.account-page{background:#f2f6fc;min-height:100vh;padding:32px 16px}.account-shell{max-width:780px;margin:auto}.account-card{background:white;border:1px solid #e1e8f2;border-radius:24px;padding:32px;box-shadow:0 18px 60px #102f5c12}.account-logo{width:74px;height:74px;object-fit:contain}.account-card h1{margin:14px 0 6px;color:#092f69}.account-card>p{color:#5d6b80}.account-tabs{display:flex;gap:20px;border-bottom:1px solid #e4eaf3;margin:24px 0;padding-bottom:12px}.account-tabs a{font-weight:700;color:#1756a5}.account-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.account-fields label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:600}.account-fields input,.account-fields select{padding:12px;border:1px solid #cbd6e5;border-radius:10px;background:#fff;color:#13233a;font:inherit;min-width:0}.account-help{font-size:13px;color:#68768a}.account-card button{margin-top:12px}.account-card #accountStatus{min-height:22px}.back-link{display:inline-block;margin-bottom:16px;color:#214e86}@media(max-width:600px){.account-card{padding:22px}.account-fields{grid-template-columns:1fr}}
+/* Pages compte élève : connexion / inscription / profil */
+.account-page{background:radial-gradient(1000px 420px at 85% -10%,#cfe2ff,transparent),#f2f6fc;min-height:100vh;padding:32px 16px}
+.account-shell{max-width:680px;margin:auto}
+.account-shell.narrow{max-width:460px}
+.back-link{display:inline-block;margin-bottom:16px;color:#214e86;font-weight:600}
+.account-card{background:#fff;border:1px solid #e1e8f2;border-radius:22px;padding:32px;box-shadow:0 18px 60px #102f5c12}
+.account-logo{width:70px;height:70px;object-fit:contain;display:block}
+.account-card h1{margin:14px 0 6px;color:#092f69;font-size:26px}
+.account-card>p{color:#5d6b80;margin:0}
+.account-switch-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#e7eef9;border-radius:14px;padding:4px;margin:22px 0}
+.account-switch-tabs a,.account-switch-tabs span{text-align:center;padding:11px 8px;border-radius:11px;font-weight:700;color:#4a5d7a}
+.account-switch-tabs span{background:#fff;color:#092f69;box-shadow:0 2px 8px #052c6818}
+.account-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.account-fields.single{grid-template-columns:1fr}
+.account-fields label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:600}
+.account-fields input,.account-fields select{padding:12px;border:1px solid #cbd6e5;border-radius:10px;background:#fff;color:#13233a;font:inherit;min-width:0;width:100%}
+.account-fields input:focus,.account-fields select:focus{outline:3px solid #0755d933;border-color:#0755d9}
+.account-help{font-size:13px;color:#68768a}
+.account-card form>.button{width:100%;margin-top:18px;justify-content:center}
+.account-card form>.button+.button{margin-top:10px}
+.account-status{margin:14px 0 0;padding:0;font-weight:600;font-size:14px}
+.account-status.ok,.account-status.err{padding:11px 14px;border-radius:10px}
+.account-status.ok{background:#dcfce7;color:#15803d}
+.account-status.err{background:#fee2e2;color:#b91c1c}
+.account-switch{text-align:center;color:#5d6b80;margin:18px 0 0}
+.account-switch a{color:#0755d9;font-weight:700}
+@media(max-width:600px){.account-card{padding:22px}.account-fields{grid-template-columns:1fr}}

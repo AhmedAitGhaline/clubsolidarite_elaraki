@@ -26,3 +26,34 @@ img{image-rendering:auto;-webkit-backface-visibility:hidden;backface-visibility:
 
 /* Accès élève dans le header */
 .header-account{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:0 0 42px;border:1px solid #d7e2f2;border-radius:50%;color:#052f70;background:#fff;transition:background .2s,color .2s}.header-account:hover{background:#0755d9;color:#fff}.header-account svg{width:20px;height:20px}.main-nav{gap:clamp(10px,1.3vw,20px)}@media(max-width:900px){.header-account{margin:8px 0}}
+
+/* ===== v3 : icône utilisateur du header ===== */
+.main-nav>a.header-account:not(.button){height:44px;width:auto;padding:0;display:inline-flex;align-items:center;gap:10px;border:0;background:none;color:var(--navy);flex:0 0 auto}
+.main-nav>a.header-account:not(.button):after{content:none;display:none}
+.header-account .ha-icon{width:42px;height:42px;border-radius:50%;display:inline-grid;place-items:center;border:2px solid var(--royal);background:#fff;color:var(--royal);overflow:hidden;font-weight:800;font-size:14px;transition:background .2s,color .2s,transform .15s;flex:0 0 42px}
+.header-account .ha-icon svg{width:21px;height:21px}
+.header-account .ha-icon img{width:100%;height:100%;object-fit:cover}
+.header-account .ha-icon.initials{background:var(--royal);color:#fff}
+.header-account:hover .ha-icon{background:var(--royal);color:#fff;transform:translateY(-1px)}
+.header-account .ha-label{display:none;font-size:13px;font-weight:700}
+@media(max-width:900px){
+ .main-nav>a.header-account:not(.button){height:auto;padding:13px 0;border-bottom:0;order:-1;font-size:13px}
+ .header-account .ha-label{display:inline}
+ .header-account .ha-icon{width:38px;height:38px;flex-basis:38px}
+}
+
+/* ===== v3 : annonce du prochain événement (attire l'attention) ===== */
+.hero{height:auto;padding:36px 0}
+.upcoming-announcement{display:flex;align-items:center;gap:16px;width:fit-content;max-width:min(720px,100%);margin:14px 0 16px;padding:12px 14px 12px 12px;border:0;border-left:6px solid #f59e0b;border-radius:14px;background:#fff;color:var(--navy);box-shadow:0 18px 44px rgba(0,16,48,.4);line-height:1.35}
+.upcoming-announcement[hidden]{display:none}
+.ua-badge{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;padding:7px 12px;border-radius:99px;background:#fff4dc;color:#8a4b08;font-size:12px;font-weight:800;white-space:nowrap}
+.ua-dot{width:9px;height:9px;border-radius:50%;background:#f59e0b;position:relative}
+.ua-dot:after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #f59e0b;animation:uaPulse 1.8s ease-out infinite}
+@keyframes uaPulse{from{transform:scale(.6);opacity:.9}to{transform:scale(1.6);opacity:0}}
+.ua-body{display:grid;gap:2px;min-width:0}
+.ua-body strong{font-size:16px;font-weight:800;color:var(--navy);overflow-wrap:anywhere}
+.ua-body span{font-size:13px;color:#4b5d78;overflow-wrap:anywhere}
+.ua-cta{flex:0 0 auto;padding:9px 16px;border-radius:99px;background:var(--royal);color:#fff;font-size:13px;font-weight:700;white-space:nowrap}
+.ua-cta:hover{background:#0646b3}
+@media(max-width:700px){.upcoming-announcement{flex-wrap:wrap;gap:10px;width:100%}.ua-body{flex:1 1 100%;order:2}.ua-cta{order:3}}
+@media(prefers-reduced-motion:reduce){.ua-dot:after{animation:none}}

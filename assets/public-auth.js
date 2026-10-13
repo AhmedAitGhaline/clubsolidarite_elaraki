@@ -1,24 +1,127 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-const cfg=window.CLUB_CONFIG||{};
-let supabase=null;
-const status=document.querySelector('#accountStatus');
-const setStatus=(m,ok=false)=>{if(status){status.textContent=m;status.style.color=ok?'#137547':'#b42318';}};
-if(cfg.supabaseUrl&&cfg.supabaseAnonKey){supabase=createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true}});window.CLUB_AUTH=supabase;}
-const tracks={'Tronc Commun':['Scientifique','Lettre'],'1 Bac':['Sciences Maths','Sciences Experimentales','Sciences Economiques'],'2 Bac':['Sciences Maths A','Sciences Maths B','Sciences Physiques','Sciences Economiques']};
-const grade=document.querySelector('[name="grade_level"]'),track=document.querySelector('[name="track"]');
-grade?.addEventListener('change',()=>{track.innerHTML='<option value="">Choisir</option>'+(tracks[grade.value]||[]).map(x=>`<option>${x}</option>`).join('');});
-const form=document.querySelector('#registerForm');
-let mode='register';
-function setMode(next){mode=next;const h=document.querySelector('#registerHeading'),b=document.querySelector('#registerSubmit'),fields=form?.querySelector('.account-fields');if(h)h.textContent=mode==='login'?'Se connecter':'Créer mon compte';if(b)b.textContent=mode==='login'?'Se connecter →':'Créer mon compte →';if(fields)fields.querySelectorAll('label').forEach(l=>{l.hidden=mode==='login'&&!['Adresse @elaraki.ac.ma *','Mot de passe *'].includes(l.childNodes[0].textContent.trim());l.querySelector('input,select')?.toggleAttribute('required',mode==='register'||l.querySelector('[name="email"],[name="password"]')!==null);});const first=form?.querySelector('[name="first_name"]');if(first)first.required=mode==='register';}
-setMode('register');
-if(form)form.addEventListener('submit',async e=>{e.preventDefault();if(!supabase){setStatus('Configuration Supabase manquante.');return;}const f=new FormData(form),email=String(f.get('email')||'').trim().toLowerCase(),password=String(f.get('password')||'');if(!/^[^@\s]+@elaraki\.ac\.ma$/.test(email)){setStatus('Utilisez obligatoirement votre adresse institutionnelle se terminant par @elaraki.ac.ma.');return;}const btn=form.querySelector('button');btn.disabled=true;try{if(mode==='login'){const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;setStatus('Connexion réussie. Vous pouvez maintenant candidater.',true);location.href='index.html#candidature';return;}const avatar=f.get('avatar');if(avatar?.size>2*1024*1024)throw new Error('La photo dépasse 2 Mo.');const {data,error}=await supabase.auth.signUp({email,password,options:{data:{first_name:f.get('first_name'),last_name:f.get('last_name'),grade_level:f.get('grade_level'),track:f.get('track'),class_number:f.get('class_number')}}});if(error)throw error;if(!data.user)throw new Error('Création du compte impossible.');const user=data.user;if(data.session&&avatar&&avatar.size){const ext=avatar.name.split('.').pop().toLowerCase(),path=`${user.id}/avatar.${ext}`;const up=await supabase.storage.from('profile-photos').upload(path,avatar,{upsert:true,contentType:avatar.type});if(up.error)throw up.error;const avatar_url=supabase.storage.from('profile-photos').getPublicUrl(path).data.publicUrl;const {error:pe}=await supabase.from('profiles').update({avatar_url}).eq('id',user.id);if(pe)throw pe;}setStatus(data.session?'Compte créé. Vous pouvez maintenant candidater.':'Compte créé. Vérifiez votre e-mail si la confirmation est activée, puis connectez-vous. La photo pourra être ajoutée après connexion.',true);setMode('login');}catch(err){setStatus(err.message||'Une erreur est survenue.');}finally{btn.disabled=false;}});
-document.addEventListener('DOMContentLoaded',()=>window.lucide?.createIcons());
+const cfg = window.CLUB_CONFIG || {};
+const $ = s => document.querySelector(s);
+let supabase = null;
+if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+  supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+  window.CLUB_AUTH = supabase;
+}
+const status = $('#accountStatus');
+const setStatus = (m, ok = false) => { if (!status) return; status.textContent = m; status.className = 'account-status ' + (m ? (ok ? 'ok' : 'err') : ''); };
+const isSchoolMail = e => /^[^@\s]+@elaraki\.ac\.ma$/.test(e);
+const setBusy = (btn, on, label) => { if (!btn) return; btn.disabled = on; if (label) btn.dataset.label = btn.dataset.label || btn.textContent; btn.textContent = on ? label : (btn.dataset.label || btn.textContent); };
 
+/* ---- Ancien lien register.html#connexion → page de connexion dédiée ---- */
+if ($('#registerForm') && location.hash === '#connexion') location.replace('login.html');
 
-const studentLoginForm=document.querySelector('#studentLoginForm');
-if(studentLoginForm)studentLoginForm.addEventListener('submit',async e=>{e.preventDefault();if(!supabase){setStatus('Service indisponible. Réessayez plus tard.');return;}const f=new FormData(studentLoginForm),email=String(f.get('email')||'').trim().toLowerCase(),password=String(f.get('password')||'');if(!/^[^@\s]+@elaraki\.ac\.ma$/.test(email)){setStatus('Utilisez votre adresse institutionnelle @elaraki.ac.ma.');return;}const btn=studentLoginForm.querySelector('button');btn.disabled=true;try{const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;location.href='index.html#candidature';}catch(err){setStatus(err.message||'Connexion impossible.');}finally{btn.disabled=false;}});
+/* ---- Icône utilisateur du header (toutes les pages publiques) ---- */
+async function paintHeaderAccount() {
+  const a = $('.header-account'); if (!a || !supabase) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  const { data: p } = await supabase.from('profiles').select('first_name,last_name,avatar_url').eq('id', session.user.id).maybeSingle();
+  a.href = 'profile.html'; a.title = 'Mon profil'; a.setAttribute('aria-label', 'Mon profil');
+  a.classList.add('is-in');
+  const label = a.querySelector('.ha-label'); if (label) label.textContent = 'Mon profil';
+  const ic = a.querySelector('.ha-icon');
+  if (p?.avatar_url) { ic.innerHTML = ''; const img = new Image(); img.src = p.avatar_url; img.alt = ''; ic.append(img); }
+  else { ic.textContent = ((p?.first_name || '')[0] || '') + ((p?.last_name || '')[0] || '') || '✓'; ic.classList.add('initials'); }
+}
+paintHeaderAccount();
 
-async function loadPublishedContent(){if(!supabase)return;try{const {data:ev}=await supabase.from('events').select('title,event_date,summary').eq('status','published').gte('event_date',new Date().toISOString().slice(0,10)).order('event_date',{ascending:true}).limit(1);const {data:setting}=await supabase.from('site_settings').select('setting_value').eq('setting_key','hero_announcement').maybeSingle();const box=document.querySelector('#upcomingAnnouncement');if(box){const e=ev?.[0],custom=setting?.setting_value?.text;const text=custom|| (e?`Prochain événement · ${new Date(e.event_date+'T12:00:00').toLocaleDateString('fr-FR')} : ${e.title} — ${e.summary||''}`:'');if(text){box.hidden=false;box.innerHTML='<i data-lucide="calendar-clock"></i><span></span>';box.querySelector('span').textContent=text;window.lucide?.createIcons();}}const {data:projects}=await supabase.from('projects').select('title,short_description,cover_image,category').in('status',['ongoing','completed']).order('created_at',{ascending:false}).limit(6);const host=document.querySelector('#publishedProjects');if(host&&projects?.length){host.innerHTML=projects.map(x=>`<article class="published-project-card">${x.cover_image?`<img src="${String(x.cover_image).replace(/"/g,'&quot;')}" alt="">`:''}<div><small>${String(x.category||'').replace(/[<>]/g,'')}</small><h3>${String(x.title||'').replace(/[<>]/g,'')}</h3><p>${String(x.short_description||'').replace(/[<>]/g,'')}</p></div></article>`).join('');}}catch(e){console.warn('Chargement du contenu publié indisponible',e);}}
-if(supabase)loadPublishedContent();
+/* ---- Inscription ---- */
+const tracks = { 'Tronc Commun': ['Scientifique', 'Lettre'], '1 Bac': ['Sciences Maths', 'Sciences Experimentales', 'Sciences Economiques'], '2 Bac': ['Sciences Maths A', 'Sciences Maths B', 'Sciences Physiques', 'Sciences Economiques'] };
+const registerForm = $('#registerForm');
+if (registerForm) {
+  const grade = registerForm.elements.grade_level, track = registerForm.elements.track;
+  grade.addEventListener('change', () => { track.innerHTML = '<option value="">Choisir</option>' + (tracks[grade.value] || []).map(x => `<option>${x}</option>`).join(''); });
+  registerForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!supabase) return setStatus('Configuration Supabase manquante.');
+    const f = new FormData(registerForm), email = String(f.get('email') || '').trim().toLowerCase(), password = String(f.get('password') || '');
+    if (!isSchoolMail(email)) return setStatus('Utilisez obligatoirement votre adresse institutionnelle se terminant par @elaraki.ac.ma.');
+    const avatar = f.get('avatar'); if (avatar?.size > 2 * 1024 * 1024) return setStatus('La photo dépasse 2 Mo.');
+    const btn = registerForm.querySelector('[type=submit]'); setBusy(btn, true, 'Création du compte…'); setStatus('');
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { first_name: f.get('first_name'), last_name: f.get('last_name'), grade_level: f.get('grade_level'), track: f.get('track'), class_number: f.get('class_number') } } });
+      if (error) throw error; if (!data.user) throw new Error('Création du compte impossible.');
+      if (data.session && avatar && avatar.size) {
+        const ext = avatar.name.split('.').pop().toLowerCase(), path = `${data.user.id}/avatar.${ext}`;
+        const up = await supabase.storage.from('profile-photos').upload(path, avatar, { upsert: true, contentType: avatar.type }); if (up.error) throw up.error;
+        const avatar_url = supabase.storage.from('profile-photos').getPublicUrl(path).data.publicUrl;
+        const { error: pe } = await supabase.from('profiles').update({ avatar_url }).eq('id', data.user.id); if (pe) throw pe;
+      }
+      if (data.session) { setStatus('Compte créé avec succès. Redirection…', true); setTimeout(() => location.href = 'index.html#candidature', 1200); }
+      else { setStatus('Compte créé. Vérifiez votre e-mail si une confirmation est demandée, puis connectez-vous.', true); setTimeout(() => location.href = 'login.html', 3500); }
+    } catch (err) { setStatus(err.message || 'Une erreur est survenue.'); }
+    finally { setBusy(btn, false); }
+  });
+}
 
-if(supabase&&!form){const box=document.querySelector('#candidateAccountState');if(box){const {data:{session}}=await supabase.auth.getSession();if(session){const {data:profile}=await supabase.from('profiles').select('first_name,last_name,grade_level,track,class_number').eq('id',session.user.id).maybeSingle();box.textContent=profile?`Connecté : ${profile.first_name} ${profile.last_name} · ${profile.grade_level} · ${profile.track} · classe ${profile.class_number}.`:'Compte connecté, mais profil scolaire incomplet.';box.style.color='#137547';const f=document.querySelector('#volunteerForm');if(f){f.elements.first_name.value=profile?.first_name||'';f.elements.last_name.value=profile?.last_name||'';f.elements.email.value=session.user.email||'';f.elements.class_name.value=[profile?.grade_level,profile?.track,profile?.class_number].filter(Boolean).join(' · ');}}else{box.textContent='Vous devez créer un compte ou vous connecter avec une adresse @elaraki.ac.ma avant de candidater.';box.style.color='#b42318';const f=document.querySelector('#volunteerForm');if(f){const b=f.querySelector('button[type="submit"]');if(b)b.addEventListener('click',e=>{e.preventDefault();location.href='register.html#connexion';});}}}}
+/* ---- Connexion (e-mail + mot de passe uniquement) ---- */
+const loginForm = $('#studentLoginForm');
+if (loginForm) loginForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!supabase) return setStatus('Service indisponible. Réessayez plus tard.');
+  const f = new FormData(loginForm), email = String(f.get('email') || '').trim().toLowerCase(), password = String(f.get('password') || '');
+  if (!isSchoolMail(email)) return setStatus('Utilisez votre adresse institutionnelle @elaraki.ac.ma.');
+  const btn = loginForm.querySelector('[type=submit]'); setBusy(btn, true, 'Connexion…'); setStatus('');
+  try {
+    const { error } = await supabase.auth.signInWithPassword({ email, password }); if (error) throw error;
+    setStatus('Connexion réussie. Redirection…', true); setTimeout(() => location.href = 'index.html#candidature', 700);
+  } catch (err) { setStatus(/invalid login/i.test(err.message || '') ? 'E-mail ou mot de passe incorrect.' : (err.message || 'Connexion impossible.')); setBusy(btn, false); }
+});
+
+/* ---- Contenu publié (annonce + projets) ---- */
+function fmtDate(d) { return new Date(d + 'T12:00:00'); }
+async function loadPublishedContent() {
+  if (!supabase) return;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: ev } = await supabase.from('events').select('title,event_date,summary').eq('status', 'published').gte('event_date', today).order('event_date', { ascending: true }).limit(1);
+    const { data: setting } = await supabase.from('site_settings').select('setting_value').eq('setting_key', 'hero_announcement').maybeSingle();
+    const box = $('#upcomingAnnouncement');
+    if (box) {
+      const e = ev?.[0], custom = (setting?.setting_value?.text || '').trim();
+      if (custom || e) {
+        box.innerHTML = '';
+        const badge = document.createElement('span'); badge.className = 'ua-badge'; badge.innerHTML = '<i class="ua-dot"></i><span></span>';
+        const body = document.createElement('div'); body.className = 'ua-body';
+        if (custom) { badge.lastChild.textContent = 'Annonce'; const t = document.createElement('strong'); t.textContent = custom; body.append(t); }
+        else {
+          const d = fmtDate(e.event_date); badge.lastChild.textContent = 'Prochain événement';
+          const t = document.createElement('strong'); t.textContent = e.title;
+          const s = document.createElement('span'); s.textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + (e.summary ? ' — ' + e.summary : '');
+          body.append(t, s);
+        }
+        const cta = document.createElement('a'); cta.href = '#evenements'; cta.className = 'ua-cta'; cta.textContent = 'Découvrir';
+        box.append(badge, body, cta); box.hidden = false;
+      }
+    }
+    const { data: projects } = await supabase.from('projects').select('title,short_description,cover_image,category').in('status', ['ongoing', 'completed']).order('created_at', { ascending: false }).limit(6);
+    const host = $('#publishedProjects');
+    if (host && projects?.length) {
+      const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      host.innerHTML = projects.map(x => `<article class="published-project-card">${x.cover_image ? `<img src="${esc(x.cover_image)}" alt="">` : ''}<div><small>${esc(x.category)}</small><h3>${esc(x.title)}</h3><p>${esc(x.short_description)}</p></div></article>`).join('');
+    }
+  } catch (e) { console.warn('Chargement du contenu publié indisponible', e); }
+}
+if (supabase && $('#upcomingAnnouncement')) loadPublishedContent();
+
+/* ---- État du compte dans le formulaire de candidature ---- */
+if (supabase && !registerForm && !loginForm) {
+  const box = $('#candidateAccountState');
+  if (box) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const f = $('#volunteerForm');
+    if (session) {
+      const { data: profile } = await supabase.from('profiles').select('first_name,last_name,grade_level,track,class_number').eq('id', session.user.id).maybeSingle();
+      box.textContent = profile ? `Connecté : ${profile.first_name} ${profile.last_name} · ${profile.grade_level} · ${profile.track} · classe ${profile.class_number}.` : 'Compte connecté, mais profil scolaire incomplet.';
+      box.style.color = '#15803d';
+      if (f) { f.elements.first_name.value = profile?.first_name || ''; f.elements.last_name.value = profile?.last_name || ''; f.elements.email.value = session.user.email || ''; f.elements.class_name.value = [profile?.grade_level, profile?.track, profile?.class_number].filter(Boolean).join(' · '); }
+    } else {
+      box.textContent = 'Vous devez vous connecter avec une adresse @elaraki.ac.ma avant de candidater.'; box.style.color = '#b91c1c';
+      f?.querySelector('button[type="submit"]')?.addEventListener('click', e => { e.preventDefault(); location.href = 'login.html'; });
+    }
+  }
+}

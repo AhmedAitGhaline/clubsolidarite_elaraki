@@ -1,11 +1,161 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Administration — Club de Solidarité</title><link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="admin.css"><link rel="stylesheet" href="admin-v2.css"></head><body class="admin-body"><aside class="sidebar"><a href="../index.html" class="side-brand"><img src="../assets/branding/club-solidarite-logo.png" alt=""><span>Club Solidarité<small>ADMINISTRATION</small></span></a><nav id="adminNav"><a class="selected" href="#dashboard" data-view="dashboard"><i data-lucide="layout-dashboard"></i> Tableau de bord</a><a href="#members" data-view="members"><i data-lucide="users"></i> Membres</a><a href="#applications" data-view="applications"><i data-lucide="clipboard-list"></i> Candidatures</a><a href="#projects" data-view="projects"><i data-lucide="folder-kanban"></i> Projets & Actions</a><a href="#events" data-view="events"><i data-lucide="calendar-days"></i> Événements</a><a href="#messages" data-view="messages"><i data-lucide="messages-square"></i> Chat du club</a><a href="#settings" data-view="settings"><i data-lucide="settings"></i> Paramètres</a></nav><button class="logout" id="logoutButton" type="button"><i data-lucide="log-out"></i> Se déconnecter</button></aside>
-<main class="admin-main"><header class="admin-top"><button id="sidebarToggle" class="menu-toggle" aria-label="Afficher le menu">☰</button><div><span class="crumb">Administration / <span id="viewCrumb">Tableau de bord</span></span><h1 id="viewTitle">Tableau de bord</h1></div><span class="admin-user" id="adminUserName">Vérification…</span></header><div class="notice" id="authStatus" role="status">Vérification de la session Supabase…</div>
-<section class="admin-view" id="view-dashboard"><div class="stat-grid"><article><span class="stat-symbol"><i data-lucide="users"></i></span><small>Membres actifs</small><strong id="membersCount">—</strong><span>Base de données</span></article><article><span class="stat-symbol orange"><i data-lucide="clipboard-list"></i></span><small>Candidatures en attente</small><strong id="appsCount">—</strong><span>À examiner</span></article><article><span class="stat-symbol"><i data-lucide="calendar-days"></i></span><small>Événements à venir</small><strong id="upcomingCount">—</strong><span>Publiés</span></article><article><span class="stat-symbol"><i data-lucide="folder-check"></i></span><small>Projets publiés</small><strong id="projectsCount">—</strong><span>Sur le site</span></article></div><div class="admin-panel"><div class="panel-title"><h2>Dernières candidatures</h2><button data-go="applications" class="text-button">Voir tout →</button></div><div id="dashboardApplications" class="admin-empty">Chargement…</div></div></section>
-<section class="admin-view" id="view-members" hidden><div class="admin-panel"><div class="panel-title"><h2>Profils des membres</h2><button class="text-button" id="refreshMembers">Actualiser</button></div><p class="admin-help">Seuls les élèves dont la candidature est acceptée apparaissent ici. Chaque fiche affiche uniquement le nom, le prénom et la classe.</p><div id="membersList" class="admin-records">Chargement…</div></div></section>
-<section class="admin-view" id="view-applications" hidden><div class="admin-panel"><div class="panel-title"><h2>Candidatures reçues</h2><button class="text-button" id="refreshApplications">Actualiser</button></div><div id="applicationsList" class="admin-records">Chargement…</div></div></section>
-<section class="admin-view" id="view-projects" hidden><div class="admin-panel"><div class="panel-title"><h2>Créer ou modifier un projet</h2></div><form id="projectForm" class="admin-form"><input type="hidden" name="id"><label>Nom du projet *<input name="title" required maxlength="140"></label><label>Catégorie<select name="category"><option>Solidarité</option><option>Éducation</option><option>Environnement</option><option>Santé</option><option>Culture</option></select></label><label class="wide">Description courte *<textarea name="short_description" required rows="2"></textarea></label><label class="wide">Description complète<textarea name="description" rows="4"></textarea></label><label>Ou téléverser une photo<input name="cover_file" type="file" accept="image/png,image/jpeg,image/webp"></label><label>Statut<select name="status"><option value="draft">Brouillon</option><option value="ongoing">Publié / en cours</option><option value="completed">Publié / terminé</option><option value="archived">Archivé</option></select></label><div class="wide admin-actions"><button class="button button-primary" type="submit">Enregistrer le projet</button><button class="button button-outline-dark" type="button" id="resetProject">Annuler la modification</button></div><p class="wide" id="projectStatus" role="status"></p></form></div><div class="admin-panel"><div class="panel-title"><h2>Projets & actions</h2><button class="text-button" id="refreshProjects">Actualiser</button></div><div id="projectsList" class="admin-records">Chargement…</div></div></section>
-<section class="admin-view" id="view-events" hidden><div class="admin-panel"><div class="panel-title"><h2>Ajouter / modifier un événement à venir</h2></div><form id="eventForm" class="admin-form"><input type="hidden" name="id"><label>Nom de l’événement *<input name="title" required maxlength="140"></label><label>Date *<input type="date" name="event_date" required></label><label>Lieu<input name="location" maxlength="160"></label><label>Catégorie<select name="category"><option>Solidarité</option><option>Éducation</option><option>Environnement</option><option>Santé</option><option>Culture</option></select></label><label class="wide">Annonce courte *<textarea name="summary" required rows="2"></textarea></label><label class="wide">Description<textarea name="description" rows="3"></textarea></label><label>Ou téléverser une photo<input name="cover_file" type="file" accept="image/png,image/jpeg,image/webp"></label><label>Publication<select name="status"><option value="draft">Brouillon</option><option value="published">Publié</option></select></label><div class="wide admin-actions"><button class="button button-primary" type="submit">Enregistrer l’événement</button><button class="button button-outline-dark" type="button" id="resetEvent">Annuler la modification</button></div><p class="wide" id="eventStatus" role="status"></p></form></div><div class="admin-panel"><div class="panel-title"><h2>Événements</h2><button class="text-button" id="refreshEvents">Actualiser</button></div><div id="eventsList" class="admin-records">Chargement…</div></div></section>
-<section class="admin-view" id="view-messages" hidden><div class="admin-panel"><div class="panel-title"><h2>Chat global des administrateurs</h2></div><p class="admin-help">Conversation partagée entre les administrateurs et éditeurs connectés.</p><div id="chatMessages" class="chat-messages">Chargement…</div><form id="chatForm" class="chat-form"><input name="message" required maxlength="2000" placeholder="Écrire un message au club…"><button class="button button-primary">Envoyer</button></form><p id="chatStatus" role="status"></p></div></section>
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#052c68">
+<title>Administration — Club de Solidarité</title>
+<link rel="icon" href="../assets/branding/club-solidarite-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css"></head>
+<body class="admin-body">
+<div class="boot" id="boot"><div><i></i><span>Vérification de la session…</span></div></div>
 
-<section class="admin-view" id="view-settings" hidden><div class="admin-panel"><div class="panel-title"><h2>Paramètres du site</h2></div><form id="settingsForm" class="admin-form"><label>Annonce sous le titre « Solidarité Elaraki »<textarea name="hero_announcement" rows="3" placeholder="Prochain événement : …"></textarea></label><label>Texte d’accueil / informations<textarea name="site_notice" rows="3" placeholder="Informations importantes pour les élèves"></textarea></label><label>Nom du club<input name="club_name" value="Club de Solidarité — ELARAKI International School of Morocco"></label><div class="wide"><button class="button button-primary">Enregistrer les paramètres</button></div><p class="wide" id="settingsStatus" role="status"></p></form><p class="admin-help">L’annonce est affichée au-dessus de la section « Agir aujourd’hui pour un avenir meilleur » lorsqu’un événement publié est à venir. Les réglages ne sont accessibles qu’aux administrateurs autorisés.</p></div><div class="admin-panel"><div class="panel-title"><h2>Paramètres utilisateur</h2></div><form id="adminProfileForm" class="admin-form"><label>Nom affiché<input name="full_name" required maxlength="120"></label><label>E-mail du compte<input name="email" type="email" required autocomplete="email"></label><label class="wide">Nouveau mot de passe (facultatif)<input name="password" type="password" minlength="8" autocomplete="new-password" placeholder="Laisser vide pour ne pas changer"></label><div class="wide"><button class="button button-primary" type="submit">Mettre à jour mon compte</button></div><p class="wide" id="adminProfileStatus" role="status"></p></form></div></section>
-</main><div class="detail-modal" id="applicationModal" hidden role="dialog" aria-modal="true" aria-labelledby="applicationModalTitle"><div class="detail-modal-card"><div class="detail-modal-head"><h2 id="applicationModalTitle">Détail de la candidature</h2><button type="button" id="closeApplicationModal">Fermer ✕</button></div><div id="applicationModalBody"></div></div></div><script src="../assets/config.js"></script><script src="https://unpkg.com/lucide@latest"></script><script type="module" src="admin-app.js"></script></body></html>
+<aside class="sidebar" id="sidebar">
+ <a href="../index.html" class="side-brand"><img src="../assets/branding/club-solidarite-logo.png" alt=""><span>Club Solidarité<small>ADMINISTRATION</small></span></a>
+ <nav id="adminNav">
+  <a class="selected" href="#dashboard" data-view="dashboard"><i data-lucide="layout-dashboard"></i> Tableau de bord</a>
+  <a href="#members" data-view="members"><i data-lucide="users"></i> Membres</a>
+  <a href="#applications" data-view="applications"><i data-lucide="clipboard-list"></i> Candidatures <span class="badge" id="navPending" hidden>0</span></a>
+  <a href="#projects" data-view="projects"><i data-lucide="folder-kanban"></i> Projets &amp; Actions</a>
+  <a href="#events" data-view="events"><i data-lucide="calendar-days"></i> Événements</a>
+  <a href="#messages" data-view="messages"><i data-lucide="messages-square"></i> Chat du club</a>
+  <a href="#settings" data-view="settings"><i data-lucide="settings"></i> Paramètres</a>
+ </nav>
+ <button class="logout" id="logoutButton" type="button"><i data-lucide="log-out"></i> Se déconnecter</button>
+</aside>
+<div class="scrim" id="scrim" hidden></div>
+
+<main class="admin-main">
+ <header class="admin-top">
+  <button id="sidebarToggle" class="menu-toggle" type="button" aria-label="Afficher le menu"><i data-lucide="menu"></i></button>
+  <div class="titles"><span class="crumb">Administration / <span id="viewCrumb">Tableau de bord</span></span><h1 id="viewTitle">Tableau de bord</h1></div>
+  <div class="user-menu">
+   <button class="user-chip" id="userChip" type="button" aria-haspopup="true" aria-expanded="false"><span class="avatar" id="userAvatar">?</span><span class="nm" id="adminUserName">…</span><i data-lucide="chevron-down"></i></button>
+   <div class="user-dd" id="userDd" hidden>
+    <div class="who"><strong id="ddName">—</strong><small id="ddMail">—</small></div>
+    <button type="button" id="ddSettings"><i data-lucide="user-cog"></i> Paramètres utilisateur</button>
+    <button type="button" class="out" id="ddLogout"><i data-lucide="log-out"></i> Se déconnecter</button>
+   </div>
+  </div>
+ </header>
+
+ <section class="admin-view" id="view-dashboard">
+  <div class="stat-grid">
+   <button class="stat" data-go="members" type="button"><span class="stat-symbol ok"><i data-lucide="users"></i></span><div><small>Membres actifs</small><strong id="membersCount">—</strong></div></button>
+   <button class="stat" data-go="applications" type="button"><span class="stat-symbol wait"><i data-lucide="clipboard-list"></i></span><div><small>Candidatures en attente</small><strong id="appsCount">—</strong></div></button>
+   <button class="stat" data-go="events" type="button"><span class="stat-symbol"><i data-lucide="calendar-days"></i></span><div><small>Événements à venir</small><strong id="upcomingCount">—</strong></div></button>
+   <button class="stat" data-go="projects" type="button"><span class="stat-symbol"><i data-lucide="folder-check"></i></span><div><small>Projets publiés</small><strong id="projectsCount">—</strong></div></button>
+  </div>
+  <div class="admin-panel">
+   <div class="panel-title"><h2><i data-lucide="clipboard-list"></i> Dernières candidatures</h2><button data-go="applications" class="btn ghost sm" type="button">Voir tout <i data-lucide="arrow-right"></i></button></div>
+   <div id="dashboardApplications" class="rows"><div class="skeleton"></div><div class="skeleton"></div></div>
+  </div>
+ </section>
+
+ <section class="admin-view" id="view-members" hidden>
+  <div class="admin-panel">
+   <div class="panel-title"><h2><i data-lucide="users"></i> Membres du club <span class="chip accepted" id="memberTotal" style="margin-left:4px">0</span></h2><div class="admin-actions"><input id="memberSearch" type="search" placeholder="Rechercher un membre…" style="border:1px solid #cbd6e5;border-radius:10px;padding:9px 12px;font:inherit;min-width:220px"><button class="btn ghost sm" id="refreshMembers" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div></div>
+   <p class="admin-help">Seuls les élèves dont la candidature est acceptée apparaissent ici : nom, prénom et classe.</p>
+   <div id="membersList" class="rows"></div>
+  </div>
+ </section>
+
+ <section class="admin-view" id="view-applications" hidden>
+  <div class="admin-panel">
+   <div class="panel-title"><h2><i data-lucide="clipboard-list"></i> Candidatures reçues</h2><button class="btn ghost sm" id="refreshApplications" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div>
+   <div class="filters" id="appFilters"></div>
+   <div id="applicationsList" class="rows" style="gap:14px"></div>
+  </div>
+ </section>
+
+ <section class="admin-view" id="view-projects" hidden>
+  <div class="admin-panel" id="projectFormPanel">
+   <div class="panel-title"><h2><i data-lucide="folder-plus"></i> <span id="projectFormTitle">Créer un projet</span></h2></div>
+   <form id="projectForm" class="admin-form">
+    <input type="hidden" name="id">
+    <label>Nom du projet *<input name="title" required maxlength="140"></label>
+    <label>Catégorie<select name="category"><option>Solidarité</option><option>Éducation</option><option>Environnement</option><option>Santé</option><option>Culture</option></select></label>
+    <label class="wide">Description courte *<textarea name="short_description" required rows="2"></textarea></label>
+    <label class="wide">Description complète<textarea name="description" rows="4"></textarea></label>
+    <label>Photo de couverture<input name="cover_file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+    <label>Statut<select name="status"><option value="draft">Brouillon</option><option value="ongoing">Publié / en cours</option><option value="completed">Publié / terminé</option><option value="archived">Archivé</option></select></label>
+    <div class="wide admin-actions"><button class="btn" type="submit"><i data-lucide="save"></i> Enregistrer le projet</button><button class="btn ghost" type="button" id="resetProject">Annuler</button></div>
+    <p class="wide form-msg" id="projectStatus" role="status"></p>
+   </form>
+  </div>
+  <div class="admin-panel">
+   <div class="panel-title"><h2><i data-lucide="folder-kanban"></i> Projets &amp; actions</h2><button class="btn ghost sm" id="refreshProjects" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div>
+   <div id="projectsList" class="rows"></div>
+  </div>
+ </section>
+
+ <section class="admin-view" id="view-events" hidden>
+  <div class="admin-panel" id="eventFormPanel">
+   <div class="panel-title"><h2><i data-lucide="calendar-plus"></i> <span id="eventFormTitle">Ajouter un événement à venir</span></h2></div>
+   <form id="eventForm" class="admin-form">
+    <input type="hidden" name="id">
+    <label>Nom de l’événement *<input name="title" required maxlength="140"></label>
+    <label>Date *<input type="date" name="event_date" required></label>
+    <label>Lieu<input name="location" maxlength="160"></label>
+    <label>Catégorie<select name="category"><option>Solidarité</option><option>Éducation</option><option>Environnement</option><option>Santé</option><option>Culture</option></select></label>
+    <label class="wide">Annonce courte *<textarea name="summary" required rows="2"></textarea></label>
+    <label class="wide">Description<textarea name="description" rows="3"></textarea></label>
+    <label>Photo de couverture<input name="cover_file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+    <label>Publication<select name="status"><option value="draft">Brouillon</option><option value="published">Publié</option></select></label>
+    <div class="wide admin-actions"><button class="btn" type="submit"><i data-lucide="save"></i> Enregistrer l’événement</button><button class="btn ghost" type="button" id="resetEvent">Annuler</button></div>
+    <p class="wide form-msg" id="eventStatus" role="status"></p>
+   </form>
+  </div>
+  <div class="admin-panel">
+   <div class="panel-title"><h2><i data-lucide="calendar-days"></i> Événements</h2><button class="btn ghost sm" id="refreshEvents" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div>
+   <div id="eventsList" class="rows"></div>
+  </div>
+ </section>
+
+ <section class="admin-view" id="view-messages" hidden>
+  <div class="admin-panel">
+   <div class="panel-title"><h2><i data-lucide="messages-square"></i> Chat global des administrateurs</h2></div>
+   <p class="admin-help">Conversation partagée entre les administrateurs et éditeurs connectés. Actualisation automatique.</p>
+   <div id="chatMessages" class="chat-messages"></div>
+   <form id="chatForm" class="chat-form"><input name="message" required maxlength="2000" placeholder="Écrire un message au club…" autocomplete="off"><button class="btn" type="submit"><i data-lucide="send"></i> Envoyer</button></form>
+   <p id="chatStatus" class="form-msg" role="status"></p>
+  </div>
+ </section>
+
+ <section class="admin-view" id="view-settings" hidden>
+  <div class="admin-panel">
+   <div class="tabs" role="tablist">
+    <button type="button" class="on" data-tab="site" id="tabSite"><i data-lucide="globe"></i> Site</button>
+    <button type="button" data-tab="account"><i data-lucide="user-cog"></i> Paramètres utilisateur</button>
+   </div>
+
+   <div id="tab-site">
+    <div class="panel-title"><h2><i data-lucide="megaphone"></i> Paramètres du site</h2></div>
+    <form id="settingsForm" class="admin-form">
+     <label class="wide">Annonce sous le titre « Solidarité Elaraki »<textarea name="hero_announcement" rows="3" placeholder="Prochain événement : …"></textarea></label>
+     <label class="wide">Texte d’accueil / informations<textarea name="site_notice" rows="3" placeholder="Informations importantes pour les élèves"></textarea></label>
+     <label class="wide">Nom du club<input name="club_name" value="Club de Solidarité — ELARAKI International School of Morocco"></label>
+     <div class="wide admin-actions"><button class="btn" type="submit"><i data-lucide="save"></i> Enregistrer les paramètres</button></div>
+     <p class="wide form-msg" id="settingsStatus" role="status"></p>
+    </form>
+    <p class="admin-help" style="margin-top:14px">L’annonce s’affiche sur la page d’accueil, sous le titre. Si elle est vide, le prochain événement publié est affiché automatiquement.</p>
+   </div>
+
+   <div id="tab-account" hidden>
+    <div class="panel-title"><h2><i data-lucide="user-cog"></i> Mon compte</h2></div>
+    <form id="adminProfileForm" class="admin-form">
+     <label>Nom affiché<input name="full_name" required maxlength="120"></label>
+     <label>E-mail du compte<input name="email" type="email" required autocomplete="email"></label>
+     <label>Nouveau mot de passe <small style="font-weight:500;color:#64748b">(facultatif)</small><input name="password" type="password" minlength="8" autocomplete="new-password" placeholder="Laisser vide pour ne pas changer"></label>
+     <label>Confirmer le mot de passe<input name="password2" type="password" minlength="8" autocomplete="new-password"></label>
+     <div class="wide admin-actions"><button class="btn" type="submit"><i data-lucide="save"></i> Mettre à jour mon compte</button></div>
+     <p class="wide form-msg" id="adminProfileStatus" role="status"></p>
+    </form>
+   </div>
+  </div>
+ </section>
+</main>
+
+<div id="toasts" aria-live="polite"></div>
+<script src="../assets/config.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script type="module" src="admin-app.js"></script>
+</body></html>
