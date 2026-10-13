@@ -60,3 +60,11 @@ Les comptes étudiants doivent utiliser `@elaraki.ac.ma`. Les photos de profil s
 - La galerie rassemble les couvertures des projets/événements publiés; elle ne remplace pas une gestion de photos séparées.
 - Les annonces et les projets sont lus depuis Supabase; les événements historiques déjà fournis dans `assets/events-data.js` restent issus des archives statiques.
 - Après exécution de la migration, testez les politiques RLS avec un compte élève et un compte administrateur avant de publier des données réelles.
+
+
+### Version UI corrective
+- Administration bleue et pleine largeur.
+- Fiches membres compactes (nom, prénom, classe).
+- Candidatures avec vue détaillée et actions adaptées au statut : seules les candidatures en attente peuvent être acceptées/refusées ; les candidatures traitées peuvent être supprimées.
+- Accès élève via une icône de navigation et pages séparées de connexion et de création de compte.
+- Galerie retirée de la navigation administrative.
