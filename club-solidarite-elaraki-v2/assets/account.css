@@ -25,3 +25,27 @@
 .account-switch{text-align:center;color:#5d6b80;margin:18px 0 0}
 .account-switch a{color:#0755d9;font-weight:700}
 @media(max-width:600px){.account-card{padding:22px}.account-fields{grid-template-columns:1fr}}
+
+/* ---- v3 : indication d'adresse institutionnelle rattachée au champ e-mail ---- */
+.field-hint{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;font-weight:500;line-height:1.45;color:#5d6b80}
+.field-hint::before{content:"i";flex:0 0 16px;width:16px;height:16px;margin-top:1px;border-radius:50%;background:#dbe7fb;color:#0755d9;font:700 11px/16px Inter,system-ui,sans-serif;text-align:center}
+.field-hint.is-error{color:#b91c1c;font-weight:600}
+.field-hint.is-error::before{content:"!";background:#fee2e2;color:#b91c1c}
+.account-fields input[aria-invalid="true"]{border-color:#dc2626;background:#fffafa}
+.account-fields input[aria-invalid="true"]:focus{outline-color:#dc262633;border-color:#dc2626}
+/* message d'état : bloc plein largeur, icône, espace réservé avant le lien du bas */
+.account-status.ok,.account-status.err{display:flex;align-items:flex-start;gap:9px;margin:16px 0 4px;line-height:1.45}
+.account-status.ok::before,.account-status.err::before{flex:0 0 18px;width:18px;height:18px;border-radius:50%;font:800 12px/18px Inter,system-ui,sans-serif;text-align:center;color:#fff;margin-top:1px}
+.account-status.ok::before{content:"✓";background:#15803d}
+.account-status.err::before{content:"!";background:#b91c1c}
+.account-switch{margin-top:22px}
+
+/* ---- v3 : suivi de candidature (profil) ---- */
+.app-status-card{margin-top:26px;padding-top:22px;border-top:1px solid #e1e8f2}
+.app-status-card h2{margin:0 0 10px;font-size:18px;color:#092f69}
+.app-status-card p{margin:8px 0}
+.app-status-card .button{margin-top:6px}
+.app-chip{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:800;background:#e7eef9;color:#214e86}
+.app-chip.pending{background:#fef3c7;color:#92400e}
+.app-chip.accepted{background:#dcfce7;color:#15803d}
+.app-chip.rejected{background:#fee2e2;color:#b91c1c}

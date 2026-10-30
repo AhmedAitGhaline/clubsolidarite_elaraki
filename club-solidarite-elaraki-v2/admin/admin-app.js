@@ -53,10 +53,14 @@ if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) { location.replace('login.html'); 
 const db = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true}});
 const {data:{session}, error:sessionError} = await db.auth.getSession();
 if (sessionError || !session) { location.replace('login.html'); throw new Error('Session missing'); }
-const {data:me, error:meErr} = await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
-if (meErr || !me || !['admin','editor'].includes(me.role)) { await db.auth.signOut(); location.replace('login.html'); throw new Error('Unauthorized'); }
-const adminOnly = me.role === 'admin';
-let displayName = me.full_name || session.user.email;
+const {data:access, error:accessErr} = await db.rpc('my_access');
+if (accessErr) { location.replace('denied.html?setup=1'); throw accessErr; }
+const perms = new Set(access?.permissions || []);
+if (!perms.size) { location.replace('denied.html'); throw new Error('Unauthorized'); }   // l'élève reste connecté au site public
+const can = p => perms.has(p), canAny = list => list.some(can);
+let {data:me} = await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+const adminOnly = can('settings');
+let displayName = me?.full_name || session.user.email;
 
 function paintUser() {
   $('#adminUserName').textContent = displayName;
@@ -66,6 +70,7 @@ function paintUser() {
 }
 paintUser();
 if (!adminOnly) $('#tabSite').hidden = true;
+$$('[data-need]').forEach(el => { if (!canAny(el.dataset.need.split(','))) el.hidden = true; });
 $('#boot').remove();
 
 async function logout(btn) {
@@ -75,19 +80,23 @@ $('#logoutButton').onclick = e => logout(e.currentTarget);
 $('#ddLogout').onclick = e => logout(e.currentTarget);
 
 /* ============ Navigation ============ */
-const views = ['dashboard','members','applications','projects','events','messages','settings'];
-const TITLES = {dashboard:'Tableau de bord', members:'Membres', applications:'Candidatures', projects:'Projets & Actions', events:'Événements', messages:'Chat du club', settings:'Paramètres'};
-let current = 'dashboard', chatTimer = null;
+const views = ['dashboard','members','applications','volunteers','projects','events','team','messages','management','settings'];
+const TITLES = {dashboard:'Tableau de bord', members:'Membres', applications:'Candidatures', volunteers:'Bénévoles', projects:'Projets & Actions', events:'Annonces & événements', team:'Équipe dirigeante', messages:'Chat du club', management:'Gestion', settings:'Paramètres'};
+/* Permission requise par rubrique (l'interface masque ; la base de données refuse réellement via RLS) */
+const NEED = {members:['members','applications'], applications:['applications'], volunteers:['volunteers'], projects:['projects'], events:['events'], team:['team'], messages:['chat'], management:['management']};
+const allowedView = v => !NEED[v] || canAny(NEED[v]);
+$$('#adminNav [data-view]').forEach(a => { if (!allowedView(a.dataset.view)) a.hidden = true; });
+let current = 'dashboard', stopView = () => {};
 function closeSidebar() { $('#sidebar').classList.remove('open'); $('#scrim').hidden = true; }
 function go(view) {
-  if (!views.includes(view)) view = 'dashboard';
+  if (!views.includes(view) || !allowedView(view)) view = 'dashboard';
   current = view;
   views.forEach(v => $('#view-' + v).hidden = v !== view);
   $$('#adminNav [data-view]').forEach(a => a.classList.toggle('selected', a.dataset.view === view));
   $('#viewTitle').textContent = $('#viewCrumb').textContent = TITLES[view];
   history.replaceState(null, '', '#' + view);
   closeSidebar(); window.scrollTo({top:0});
-  clearInterval(chatTimer);
+  stopView(); stopView = () => {};
   loadView(view);
 }
 $('#adminNav').addEventListener('click', e => { const a = e.target.closest('[data-view]'); if (a) { e.preventDefault(); go(a.dataset.view); } });
@@ -118,22 +127,25 @@ const classOf = a => a.class_name || 'Classe non renseignée';
 
 /* ============ Tableau de bord ============ */
 async function loadDashboard() {
-  const host = $('#dashboardApplications'); host.innerHTML = skeleton(3);
+  const host = $('#dashboardApplications'), canApps = canAny(['applications','volunteers']);
+  if (canApps) host.innerHTML = skeleton(3);
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10), none = {count:null};
+    const run = (ok, q) => ok ? q : Promise.resolve(none);
     const [m, p, ev, pr] = await Promise.all([
-      db.from('applications').select('id', {count:'exact', head:true}).eq('status', 'accepted'),
-      db.from('applications').select('id', {count:'exact', head:true}).eq('status', 'pending'),
-      db.from('events').select('id', {count:'exact', head:true}).eq('status', 'published').gte('event_date', today),
-      db.from('projects').select('id', {count:'exact', head:true}).in('status', ['ongoing','completed'])
+      run(canAny(['members','applications']), db.from('applications').select('id', {count:'exact', head:true}).eq('status', 'accepted')),
+      run(canApps, db.from('applications').select('id', {count:'exact', head:true}).eq('status', 'pending')),
+      run(can('events'), db.from('events').select('id', {count:'exact', head:true}).eq('status', 'published').gte('event_date', today)),
+      run(can('projects'), db.from('projects').select('id', {count:'exact', head:true}).in('status', ['ongoing','completed']))
     ]);
     $('#membersCount').textContent = m.count ?? '—'; $('#appsCount').textContent = p.count ?? '—';
     $('#upcomingCount').textContent = ev.count ?? '—'; $('#projectsCount').textContent = pr.count ?? '—';
+    if (!canApps) return;
     setPending(p.count);
     const {data, error} = await db.from('applications').select('*').order('submitted_at', {ascending:false}).limit(6);
     if (error) throw error;
     host.innerHTML = data.length ? data.map(a => `<div class="row"><span class="avatar">${esc(initials(a.first_name, a.last_name))}</span><div class="who"><strong>${esc(fullName(a))}</strong><small>${esc(classOf(a))}</small></div><span class="meta">${dateFr(a.submitted_at)}</span>${chip(a.status || 'pending')}<div class="acts"><button class="btn ghost sm" data-app-detail="${esc(a.id)}" type="button"><i data-lucide="eye"></i> Voir</button></div></div>`).join('') : empty('inbox', 'Aucune candidature pour le moment.');
-  } catch (e) { host.innerHTML = empty('alert-circle', 'Chargement impossible.'); fail('Tableau de bord indisponible', e.message); }
+  } catch (e) { if (canApps) host.innerHTML = empty('alert-circle', 'Chargement impossible.'); fail('Tableau de bord indisponible', e.message); }
   icons();
 }
 function setPending(n) { const b = $('#navPending'); b.textContent = n || 0; b.hidden = !n; }
@@ -276,67 +288,10 @@ $('#projectForm').addEventListener('submit', async e => {
 $('#resetProject').onclick = () => { clearForm($('#projectForm')); $('#projectFormTitle').textContent = 'Créer un projet'; formMsg('projectStatus', '', true); toast('info', 'Formulaire réinitialisé', '', 1800); };
 $('#refreshProjects').onclick = e => busy(e.currentTarget, async () => { await loadProjects(); ok('Projets actualisés'); });
 
-/* ---- Événements ---- */
-async function loadEvents() {
-  const host = $('#eventsList'); host.innerHTML = skeleton(3);
-  try {
-    const rows = await query('events', '*', {order:'event_date'});
-    host.innerHTML = rows.length ? rows.map(x => `<div class="row thumb">${thumb(x.cover_image)}<div class="who"><strong>${esc(x.title)}</strong><small>${x.event_date ? dateFr(x.event_date) : 'Date à définir'} · ${esc(x.category)}${x.location ? ' · ' + esc(x.location) : ''}</small></div>${chip(x.status)}<div class="acts"><button class="icon-btn" data-event-edit="${esc(x.id)}" title="Modifier" aria-label="Modifier" type="button"><i data-lucide="pencil"></i></button><button class="icon-btn danger" data-event-delete="${esc(x.id)}" data-name="${esc(x.title)}" title="Supprimer" aria-label="Supprimer" type="button"><i data-lucide="trash-2"></i></button></div></div>`).join('') : empty('calendar-x', 'Aucun événement. Ajoutez un événement ci-dessus.');
-  } catch (e) { host.innerHTML = empty('alert-circle', 'Chargement impossible.'); fail('Événements indisponibles', e.message); }
-  icons();
-}
-$('#eventsList').addEventListener('click', async e => {
-  const edit = e.target.closest('[data-event-edit]'), del = e.target.closest('[data-event-delete]');
-  try {
-    if (edit) { await busy(edit, async () => { const {data, error} = await db.from('events').select('*').eq('id', edit.dataset.eventEdit).single(); if (error) throw error; fillForm($('#eventForm'), data); $('#eventFormTitle').textContent = 'Modifier l’événement'; $('#eventFormPanel').scrollIntoView({behavior:'smooth'}); }); toast('info', 'Mode modification', 'L’événement est chargé dans le formulaire.', 2500); }
-    if (del) {
-      if (!await askConfirm('Supprimer cet événement ?', `« ${esc(del.dataset.name)} » sera supprimé définitivement.`, 'Supprimer')) return;
-      await busy(del, async () => { const {error} = await db.from('events').delete().eq('id', del.dataset.eventDelete); if (error) throw error; });
-      ok('Événement supprimé', del.dataset.name); await loadEvents();
-    }
-  } catch (err) { fail('Action impossible', err.message); }
-});
-$('#eventForm').addEventListener('submit', async e => {
-  e.preventDefault(); const form = e.currentTarget, f = new FormData(form), id = f.get('id') || null, title = String(f.get('title')).trim(), btn = form.querySelector('[type=submit]');
-  await busy(btn, async () => {
-    try {
-      const mediaId = id || crypto.randomUUID(), cover = await coverValue(form, mediaId, form.dataset.existingCover || null);
-      const payload = {title, event_date:f.get('event_date'), location:f.get('location') || null, category:f.get('category'), summary:f.get('summary'), description:f.get('description') || '', cover_image:cover, status:f.get('status'), date_type:'actual', published_at:f.get('status') === 'published' ? new Date().toISOString() : null};
-      const {error} = id ? await db.from('events').update(payload).eq('id', id) : await db.from('events').insert({...payload, id:mediaId, slug:slug(title)});
-      if (error) throw error;
-      ok(id ? 'Événement mis à jour' : 'Événement créé', title + (payload.status === 'published' ? ' — publié sur le site.' : ' — enregistré en brouillon.')); formMsg('eventStatus', 'Événement enregistré.', true);
-      clearForm(form); $('#eventFormTitle').textContent = 'Ajouter un événement à venir'; await loadEvents();
-    } catch (err) { formMsg('eventStatus', 'Erreur : ' + err.message, false); fail('Enregistrement impossible', err.message); }
-  });
-});
-$('#resetEvent').onclick = () => { clearForm($('#eventForm')); $('#eventFormTitle').textContent = 'Ajouter un événement à venir'; formMsg('eventStatus', '', true); toast('info', 'Formulaire réinitialisé', '', 1800); };
-$('#refreshEvents').onclick = e => busy(e.currentTarget, async () => { await loadEvents(); ok('Événements actualisés'); });
-
-/* ============ Chat ============ */
-let lastChatCount = -1;
-async function loadChat(silent = false) {
-  const host = $('#chatMessages');
-  try {
-    const rows = await query('chat_messages', 'id,user_id,author_name,message,created_at', {order:'created_at'});
-    if (silent && rows.length === lastChatCount) return;
-    lastChatCount = rows.length;
-    host.innerHTML = rows.map(m => `<div class="chat-message ${m.user_id === session.user.id ? 'mine' : ''}"><strong>${esc(m.author_name || 'Membre du bureau')}</strong><p>${esc(m.message)}</p><small>${dateFr(m.created_at)} · ${new Date(m.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</small></div>`).join('') || empty('message-circle', 'Aucun message. Lancez la conversation.');
-    host.scrollTop = host.scrollHeight; icons();
-  } catch (e) { host.innerHTML = empty('alert-circle', 'Le chat nécessite la migration SQL v2.'); if (!silent) fail('Chat indisponible', e.message); }
-}
-$('#chatForm').addEventListener('submit', async e => {
-  e.preventDefault(); const form = e.currentTarget, input = form.elements.message, msg = input.value.trim(); if (!msg) return;
-  await busy(form.querySelector('button'), async () => {
-    const {error} = await db.from('chat_messages').insert({user_id:session.user.id, author_name:displayName, message:msg});
-    if (error) { fail('Message non envoyé', error.message); return; }
-    input.value = ''; await loadChat(); toast('success', 'Message envoyé', '', 1500);
-  });
-});
-
 /* ============ Paramètres ============ */
 async function loadSettings() {
   const f = $('#settingsForm'), a = $('#adminProfileForm');
-  a.elements.full_name.value = displayName === session.user.email ? (me.full_name || '') : displayName;
+  a.elements.full_name.value = displayName === session.user.email ? (me?.full_name || '') : displayName;
   a.elements.email.value = session.user.email || '';
   if (!adminOnly) { openSettingsTab('account'); return; }
   try {
@@ -356,29 +311,48 @@ $('#settingsForm').addEventListener('submit', async e => {
   });
 });
 $('#adminProfileForm').addEventListener('submit', async e => {
-  e.preventDefault(); const f = new FormData(e.currentTarget), full_name = String(f.get('full_name') || '').trim(), email = String(f.get('email') || '').trim(), password = String(f.get('password') || ''), password2 = String(f.get('password2') || '');
+  e.preventDefault();
+  /* CORRECTIF : e.currentTarget vaut null dès qu'un « await » a eu lieu (l'événement est terminé).
+     L'ancien code relisait e.currentTarget.elements APRÈS la mise à jour => TypeError alors que le nom était déjà enregistré. */
+  const form = e.currentTarget, f = new FormData(form), full_name = String(f.get('full_name') || '').trim().replace(/\s+/g, ' '), email = String(f.get('email') || '').trim(), password = String(f.get('password') || ''), password2 = String(f.get('password2') || '');
+  if (!full_name) { formMsg('adminProfileStatus', 'Le nom est obligatoire.', false); fail('Nom', 'Saisissez votre nom.'); return; }
   if (password && password !== password2) { formMsg('adminProfileStatus', 'Les mots de passe ne correspondent pas.', false); fail('Mot de passe', 'Les deux mots de passe ne correspondent pas.'); return; }
-  await busy(e.currentTarget.querySelector('[type=submit]'), async () => {
+  await busy(form.querySelector('[type=submit]'), async () => {
     try {
-      const upd = {}; if (email && email !== session.user.email) upd.email = email; if (password) upd.password = password;
+      const emailChanged = email && email.toLowerCase() !== String(session.user.email).toLowerCase(), upd = {};
+      if (emailChanged) upd.email = email; if (password) upd.password = password;
       if (Object.keys(upd).length) { const {error} = await db.auth.updateUser(upd); if (error) throw error; }
-      const {error:pe} = await db.from('profiles').update({full_name, email, updated_at:new Date().toISOString()}).eq('id', session.user.id); if (pe) throw pe;
-      displayName = full_name; paintUser(); e.currentTarget.elements.password.value = e.currentTarget.elements.password2.value = '';
-      ok('Compte mis à jour', upd.email ? 'Confirmez votre nouvel e-mail depuis votre boîte mail.' : password ? 'Mot de passe modifié.' : 'Vos informations ont été enregistrées.');
+      const patch = {full_name};
+      if (full_name !== (me?.full_name || '')) { const [first, ...rest] = full_name.split(' '); patch.first_name = first; patch.last_name = rest.join(' '); }
+      // L'e-mail du profil est synchronisé par la base après confirmation du changement (déclencheur sync_profile_email).
+      const {data:rows, error:pe} = await db.from('profiles').update(patch).eq('id', session.user.id).select('id,full_name,first_name,last_name');
+      if (pe) throw pe;
+      if (!rows?.length) throw new Error('Le nom n’a pas été enregistré (profil introuvable ou accès refusé).');   // pas de faux succès
+      me = {...(me || {}), ...rows[0]}; displayName = rows[0].full_name; paintUser();
+      form.elements.password.value = form.elements.password2.value = '';
+      ok('Compte mis à jour', emailChanged ? 'Confirmez votre nouvel e-mail depuis votre boîte mail.' : password ? 'Mot de passe modifié.' : 'Votre nom a été enregistré.');
       formMsg('adminProfileStatus', 'Compte mis à jour.', true);
     } catch (err) { formMsg('adminProfileStatus', 'Erreur : ' + err.message, false); fail('Mise à jour impossible', err.message); }
   });
 });
 
 /* ============ Chargement des vues ============ */
+const MODULES = {events:'./admin-events.js', volunteers:'./admin-volunteers.js', team:'./admin-team.js', messages:'./admin-chat.js', management:'./admin-management.js'};
+const loadedModules = {};
+const ctx = {db, session, access, can, canAny, $, $$, esc, icons, toast, ok, fail, busy, dialog, askConfirm, dateFr, chip, skeleton, empty, initials, query, fullName, formMsg, go, getName: () => displayName};
 async function loadView(v) {
   if (v === 'dashboard') await loadDashboard();
   if (v === 'members') await loadMembers();
   if (v === 'applications') await loadApplications();
   if (v === 'projects') await loadProjects();
-  if (v === 'events') await loadEvents();
-  if (v === 'messages') { lastChatCount = -1; await loadChat(); chatTimer = setInterval(() => loadChat(true), 10000); }
   if (v === 'settings') await loadSettings();
+  if (MODULES[v]) {
+    try {
+      loadedModules[v] ??= (await import(MODULES[v])).init(ctx);
+      const m = loadedModules[v]; stopView = () => m.stop?.();
+      await m.load();
+    } catch (e) { console.error(e); fail('Rubrique indisponible', e.message); }
+  }
 }
 icons();
 go(location.hash.slice(1) || 'dashboard');

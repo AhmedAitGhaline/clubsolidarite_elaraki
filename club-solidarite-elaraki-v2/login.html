@@ -3,7 +3,7 @@
 <section class="account-card"><img class="account-logo" src="assets/branding/club-solidarite-logo.png" alt="Club de Solidarité">
 <h1>Connexion</h1><p>Entrez votre adresse institutionnelle <strong>@elaraki.ac.ma</strong> et votre mot de passe.</p>
 <div class="account-switch-tabs"><span>Se connecter</span><a href="register.html">Créer un compte</a></div>
-<form id="studentLoginForm"><div class="account-fields single"><label>Adresse e-mail<input name="email" type="email" required autocomplete="username" placeholder="prenom.nom@elaraki.ac.ma"></label><label>Mot de passe<input name="password" type="password" required autocomplete="current-password"></label></div>
+<form id="studentLoginForm"><div class="account-fields single"><label>Adresse e-mail<input name="email" type="email" required autocomplete="username" placeholder="prenom.nom@elaraki.ac.ma" aria-describedby="emailHint"><small class="field-hint" id="emailHint">Utilisez votre adresse institutionnelle @elaraki.ac.ma.</small></label><label>Mot de passe<input name="password" type="password" required autocomplete="current-password"></label></div>
 <button class="button button-primary" type="submit">Se connecter</button><p id="accountStatus" class="account-status" role="status"></p></form>
 <p class="account-switch">Pas encore de compte ? <a href="register.html">Créer un compte</a></p></section></main>
 <script src="assets/config.js"></script><script type="module" src="assets/public-auth.js"></script></body></html>

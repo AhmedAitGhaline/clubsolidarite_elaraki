@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { fillTrackSelect } from './academics.js';
 const cfg = window.CLUB_CONFIG || {};
 const $ = s => document.querySelector(s);
 let supabase = null;
@@ -9,6 +10,8 @@ if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
 const status = $('#accountStatus');
 const setStatus = (m, ok = false) => { if (!status) return; status.textContent = m; status.className = 'account-status ' + (m ? (ok ? 'ok' : 'err') : ''); };
 const isSchoolMail = e => /^[^@\s]+@elaraki\.ac\.ma$/.test(e);
+/* Indication d'adresse institutionnelle : rattachée au champ e-mail (et non plus un bloc flottant sous le bouton) */
+const flagEmail = (form, on) => { const i = form?.elements?.email, h = form?.querySelector('.field-hint'); if (!i) return; i.setAttribute('aria-invalid', on ? 'true' : 'false'); h?.classList.toggle('is-error', !!on); if (on) i.focus(); };
 const setBusy = (btn, on, label) => { if (!btn) return; btn.disabled = on; if (label) btn.dataset.label = btn.dataset.label || btn.textContent; btn.textContent = on ? label : (btn.dataset.label || btn.textContent); };
 
 /* ---- Ancien lien register.html#connexion → page de connexion dédiée ---- */
@@ -30,16 +33,16 @@ async function paintHeaderAccount() {
 paintHeaderAccount();
 
 /* ---- Inscription ---- */
-const tracks = { 'Tronc Commun': ['Scientifique', 'Lettre'], '1 Bac': ['Sciences Maths', 'Sciences Experimentales', 'Sciences Economiques'], '2 Bac': ['Sciences Maths A', 'Sciences Maths B', 'Sciences Physiques', 'Sciences Economiques'] };
 const registerForm = $('#registerForm');
 if (registerForm) {
   const grade = registerForm.elements.grade_level, track = registerForm.elements.track;
-  grade.addEventListener('change', () => { track.innerHTML = '<option value="">Choisir</option>' + (tracks[grade.value] || []).map(x => `<option>${x}</option>`).join(''); });
+  grade.addEventListener('change', () => fillTrackSelect(track, grade.value, ''));
   registerForm.addEventListener('submit', async e => {
     e.preventDefault();
     if (!supabase) return setStatus('Configuration Supabase manquante.');
     const f = new FormData(registerForm), email = String(f.get('email') || '').trim().toLowerCase(), password = String(f.get('password') || '');
-    if (!isSchoolMail(email)) return setStatus('Utilisez obligatoirement votre adresse institutionnelle se terminant par @elaraki.ac.ma.');
+    if (!isSchoolMail(email)) { setStatus(''); return flagEmail(registerForm, true); }
+    flagEmail(registerForm, false);
     const avatar = f.get('avatar'); if (avatar?.size > 2 * 1024 * 1024) return setStatus('La photo dépasse 2 Mo.');
     const btn = registerForm.querySelector('[type=submit]'); setBusy(btn, true, 'Création du compte…'); setStatus('');
     try {
@@ -60,11 +63,13 @@ if (registerForm) {
 
 /* ---- Connexion (e-mail + mot de passe uniquement) ---- */
 const loginForm = $('#studentLoginForm');
+if (loginForm) loginForm.elements.email.addEventListener('input', () => flagEmail(loginForm, false));
 if (loginForm) loginForm.addEventListener('submit', async e => {
   e.preventDefault();
   if (!supabase) return setStatus('Service indisponible. Réessayez plus tard.');
   const f = new FormData(loginForm), email = String(f.get('email') || '').trim().toLowerCase(), password = String(f.get('password') || '');
-  if (!isSchoolMail(email)) return setStatus('Utilisez votre adresse institutionnelle @elaraki.ac.ma.');
+  if (!isSchoolMail(email)) { setStatus(''); return flagEmail(loginForm, true); }
+  flagEmail(loginForm, false);
   const btn = loginForm.querySelector('[type=submit]'); setBusy(btn, true, 'Connexion…'); setStatus('');
   try {
     const { error } = await supabase.auth.signInWithPassword({ email, password }); if (error) throw error;
@@ -78,7 +83,7 @@ async function loadPublishedContent() {
   if (!supabase) return;
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const { data: ev } = await supabase.from('events').select('title,event_date,summary').eq('status', 'published').gte('event_date', today).order('event_date', { ascending: true }).limit(1);
+    const { data: ev } = await supabase.from('events').select('id,slug,title,event_date,summary').eq('status', 'published').gte('event_date', today).order('event_date', { ascending: true }).limit(1);
     const { data: setting } = await supabase.from('site_settings').select('setting_value').eq('setting_key', 'hero_announcement').maybeSingle();
     const box = $('#upcomingAnnouncement');
     if (box) {
@@ -94,7 +99,7 @@ async function loadPublishedContent() {
           const s = document.createElement('span'); s.textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + (e.summary ? ' — ' + e.summary : '');
           body.append(t, s);
         }
-        const cta = document.createElement('a'); cta.href = '#evenements'; cta.className = 'ua-cta'; cta.textContent = 'Découvrir';
+        const cta = document.createElement('a'); cta.href = e ? 'annonce.html?e=' + encodeURIComponent(e.slug || e.id) : '#evenements'; cta.className = 'ua-cta'; cta.textContent = 'Découvrir';
         box.append(badge, body, cta); box.hidden = false;
       }
     }
@@ -108,20 +113,4 @@ async function loadPublishedContent() {
 }
 if (supabase && $('#upcomingAnnouncement')) loadPublishedContent();
 
-/* ---- État du compte dans le formulaire de candidature ---- */
-if (supabase && !registerForm && !loginForm) {
-  const box = $('#candidateAccountState');
-  if (box) {
-    const { data: { session } } = await supabase.auth.getSession();
-    const f = $('#volunteerForm');
-    if (session) {
-      const { data: profile } = await supabase.from('profiles').select('first_name,last_name,grade_level,track,class_number').eq('id', session.user.id).maybeSingle();
-      box.textContent = profile ? `Connecté : ${profile.first_name} ${profile.last_name} · ${profile.grade_level} · ${profile.track} · classe ${profile.class_number}.` : 'Compte connecté, mais profil scolaire incomplet.';
-      box.style.color = '#15803d';
-      if (f) { f.elements.first_name.value = profile?.first_name || ''; f.elements.last_name.value = profile?.last_name || ''; f.elements.email.value = session.user.email || ''; f.elements.class_name.value = [profile?.grade_level, profile?.track, profile?.class_number].filter(Boolean).join(' · '); }
-    } else {
-      box.textContent = 'Vous devez vous connecter avec une adresse @elaraki.ac.ma avant de candidater.'; box.style.color = '#b91c1c';
-      f?.querySelector('button[type="submit"]')?.addEventListener('click', e => { e.preventDefault(); location.href = 'login.html'; });
-    }
-  }
-}
+/* L'état du compte et le formulaire de candidature sont gérés par assets/volunteer.js */

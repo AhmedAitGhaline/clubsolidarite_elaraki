@@ -45,22 +45,6 @@
   return res.json();
  }
  function setStatus(el,msg,ok=false){el.textContent=msg;el.style.color=ok?'#167447':'#b42318'}
- $('#volunteerForm').addEventListener('submit',async e=>{
-  e.preventDefault();const form=e.currentTarget, status=$('#volunteerStatus'),btn=form.querySelector('button[type="submit"]');
-  btn.disabled=true;btn.textContent='Envoi en cours…';
-  const f=new FormData(form);
-  try{
-   const auth=window.CLUB_AUTH;
-   if(!auth) throw new Error('Connectez-vous avec votre compte @elaraki.ac.ma avant de candidater.');
-   const {data: sessionData}=await auth.auth.getSession(); const user=sessionData.session?.user;
-   if(!user) throw new Error('Vous devez créer un compte ou vous connecter avant de déposer une candidature.');
-   const {data: profile,error:profileErr}=await auth.from('profiles').select('first_name,last_name,email,grade_level,track,class_number').eq('id',user.id).single();
-   if(profileErr||!profile) throw new Error('Profil scolaire introuvable. Complétez votre profil sur la page de compte.');
-   const data={user_id:user.id,first_name:profile.first_name,last_name:profile.last_name,email:user.email,class_name:[profile.grade_level,profile.track,profile.class_number].filter(Boolean).join(' · '),phone:f.get('phone').trim()||null,interest_area:f.get('interest_area'),motivation:f.get('motivation').trim(),availability:f.get('availability').trim()||null,consent:true,status:'pending'};
-   const {data:rows,error}=await auth.from('applications').insert(data).select('id'); if(error) throw error;setStatus(status,'Candidature enregistrée. Référence : '+(rows[0]?.id||'confirmée')+'. Le bureau pourra l’examiner.',true);form.reset();
-  }catch(err){setStatus(status,err.message==='SUPABASE_NOT_CONFIGURED'?'Le formulaire est prêt, mais il n’est pas encore connecté : configurez Supabase pour transmettre la candidature en toute sécurité.':err.message);}
-  finally{btn.disabled=false;btn.innerHTML='Envoyer ma candidature <span>→</span>'}
- });
  $('#contactForm').addEventListener('submit',async e=>{
   e.preventDefault();const form=e.currentTarget,status=$('#contactStatus'),btn=form.querySelector('button');btn.disabled=true;btn.textContent='Envoi en cours…';
   const f=new FormData(form),data={name:f.get('name').trim(),email:f.get('email').trim().toLowerCase(),subject:f.get('subject').trim(),message:f.get('message').trim(),status:'new'};

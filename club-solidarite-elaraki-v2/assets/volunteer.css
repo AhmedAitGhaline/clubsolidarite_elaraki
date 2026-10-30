@@ -1,0 +1,55 @@
+/* Parcours bénévole (v3) — s'appuie sur les variables et le style de style.css */
+.vol-gate{visibility:hidden}.vol-gate.ready{visibility:visible}
+.vol-card{display:grid;gap:18px}
+.vol-card h3{font-size:20px}
+.vol-loading{padding:26px;text-align:center;color:var(--muted);font-size:14px}
+.vol-alert{padding:12px 14px;border-radius:10px;font-size:14px;font-weight:600}
+.vol-alert.ok{background:#dcfce7;color:#15803d}.vol-alert.err{background:#fee2e2;color:#b91c1c}
+/* carte d'identité scolaire */
+.id-card{border:1px solid #d7e4f8;border-radius:16px;background:linear-gradient(135deg,#f4f8ff,#fff 60%);padding:18px;box-shadow:0 8px 24px #0a2e6812}
+.id-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.id-avatar{width:52px;height:52px;border-radius:50%;background:var(--royal);color:#fff;display:grid;place-items:center;font-weight:800;font-size:17px;overflow:hidden;flex:0 0 52px}
+.id-avatar img{width:100%;height:100%;object-fit:cover}
+.id-who{display:grid;gap:3px;min-width:0;flex:1 1 180px}
+.id-who strong{font-size:17px;color:var(--navy);overflow-wrap:anywhere}
+.id-who span{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5c6f8c;overflow-wrap:anywhere}
+.id-who svg,.id-badge svg{width:15px;height:15px;flex:0 0 15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.id-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:99px;background:#dcfce7;color:#15803d;font-size:12px;font-weight:800;white-space:nowrap}
+.id-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0 0}
+.id-grid>div{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"i t" "i d";column-gap:10px;align-items:center;padding:11px 12px;border-radius:12px;background:#fff;border:1px solid #e3ebf5}
+.id-grid svg{grid-area:i;width:22px;height:22px;fill:none;stroke:var(--royal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.id-grid dt{grid-area:t;font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:#7b8ba3;font-weight:700}
+.id-grid dd{grid-area:d;margin:0;font-size:14px;font-weight:700;color:var(--navy);overflow-wrap:anywhere}
+.vol-missing{font-style:normal;font-weight:600;color:#b45309}
+.id-warn{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:#fff7e6;color:#92400e;font-size:13px;font-weight:600}
+.id-warn a,.id-edit{color:var(--royal);font-weight:700;text-decoration:underline}
+.id-edit{display:inline-block;margin-top:12px;font-size:12.5px}
+/* statut */
+.vol-status{display:grid;gap:6px;padding:14px 16px;border-radius:12px;border:1px solid #e3ebf5;background:#f8fafd}
+.vol-status>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.vol-status small{color:var(--muted)}.vol-status p{margin:0;font-size:13.5px;color:#41536f}
+.vol-status.accepted{background:#f0fdf4;border-color:#bbf7d0}.vol-status.rejected{background:#fef2f2;border-color:#fecaca}.vol-status.pending{background:#fffbeb;border-color:#fde68a}
+/* formulaire */
+.vol-form fieldset{border:0;margin:0;padding:0;min-width:0}
+.vol-form fieldset[disabled]{opacity:.55}
+.vol-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:4px 0 20px}
+.vol-grid label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:#344b6c}
+.vol-grid .full{grid-column:1/-1}
+.vol-grid input:not([type=checkbox]),.vol-grid textarea{width:100%;min-width:0;border:1px solid #dce5f0;border-radius:8px;background:#fff;padding:11px 12px;color:var(--ink);font:inherit;font-size:14px;font-weight:400;outline:0}
+.vol-grid input:focus-visible,.vol-grid textarea:focus-visible{border-color:var(--royal);box-shadow:0 0 0 3px #0755d91c}
+.vol-grid textarea{resize:vertical}
+.vol-areas{border:0;padding:0;margin:0}
+.vol-areas legend{font-size:13px;font-weight:700;color:#344b6c;padding:0;margin-bottom:8px}
+.area-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vol-grid label.area{flex-direction:row;align-items:center;gap:10px;padding:10px 12px;border:1px solid #dce5f0;border-radius:10px;background:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:border-color .15s,background .15s}
+.area input{width:16px;height:16px;accent-color:var(--royal);flex:0 0 16px}
+.area:has(input:checked){border-color:var(--royal);background:#eef4ff;color:var(--navy)}
+.area-other{margin-top:10px}.area-other[hidden]{display:none}
+.counter{align-self:flex-end;font-size:11px;font-weight:600;color:#8190a6}
+.fe{color:#b91c1c;font-size:12.5px;font-weight:600;min-height:0}.fe:empty{display:none}
+.vol-form .consent span{font-size:12.5px}
+.vol-form>fieldset>.button{width:100%}
+.vol-note{font-size:13px;color:#92400e;margin:10px 0 0}
+.vol-form-status{margin:12px 0 0;font-size:13.5px;font-weight:600;border-radius:10px}
+.vol-form-status.err{padding:11px 14px;background:#fee2e2;color:#b91c1c}.vol-form-status.ok{padding:11px 14px;background:#dcfce7;color:#15803d}
+@media(max-width:700px){.id-grid{grid-template-columns:1fr}.vol-grid,.area-grid{grid-template-columns:1fr}.id-badge{order:3}}
+.vol-gate[hidden]{display:none!important}

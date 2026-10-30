@@ -76,3 +76,22 @@ Les comptes étudiants doivent utiliser `@elaraki.ac.ma`. Les photos de profil s
 - Section galerie supprimée de l'admin.
 - Site public : icône utilisateur dans le header, pages Connexion / Inscription séparées, annonce du prochain événement mise en avant.
 - Aucun changement Supabase (aucun SQL à relancer).
+
+## Mise à jour v4 — sécurité de l'administration, bénévoles, chat, annonces, équipe
+
+### À faire dans Supabase (dans cet ordre)
+1. **Sauvegarde** (Database → Backups).
+2. SQL Editor → exécuter `supabase/migration-v3.sql` (idempotent). Lire les `NOTICE` affichés : doublons de candidatures éventuels, super administrateur initialisé ou non.
+3. **Super administrateur** : le rôle est attribué automatiquement au compte Supabase dont l'e-mail **confirmé** est `aghaline20@gmail.com` (à la migration, ou dès sa création/confirmation). Activez *Authentication → Providers → Email → Confirm email* pour que personne ne puisse s'inscrire avec cette adresse sans la posséder.
+4. Vérifier *Database → Replication* : `chat_messages` doit être dans la publication `supabase_realtime` (la migration l'ajoute). Pour l'indicateur de saisie, *Realtime → Settings* : désactiver « Allow public access » est recommandé ; les politiques `realtime.messages` sont créées par la migration (sinon un NOTICE l'indique : les créer depuis le Dashboard).
+5. Anciens comptes : ceux qui avaient `profiles.role = 'admin'` deviennent **Administrateur** ; tous les autres (ancien `editor` automatique) deviennent **Élève** sans accès. Relisez la liste dans *Administration → Gestion*.
+6. Filières altérées : exécuter l'**étape 1** de `supabase/repair-tracks.sql` (lecture seule), relire, puis seulement si nécessaire l'étape 3 (décommentée à la main).
+7. Un élève qui doit utiliser le chat reçoit la permission « Chat du club » depuis Gestion.
+
+Retour arrière : `supabase/rollback-v3.sql` (rétablit l'ancien comportement non sécurisé).
+
+### Nouveautés
+- `assets/volunteer.js|css` : parcours « Devenir bénévole » (invité / connecté, carte d'identité scolaire, formulaire, suivi du statut ; le statut est aussi dans `profile.html`).
+- `annonce.html` : page de détail (« Découvrir ») ; galerie dans `event_images`, fichiers dans le bucket `club-media`.
+- `admin/admin-*.js` : modules Bénévoles, Gestion, Équipe dirigeante, Annonces & événements, Chat.
+- Les droits ne dépendent plus de `profiles.role` mais des tables `club_roles`, `user_roles`, `club_permissions` ; toutes les écritures passent par des fonctions serveur (`admin_set_role`, `admin_update_account`, `submit_volunteer_application`).
