@@ -83,7 +83,7 @@ async function loadPublishedContent() {
   if (!supabase) return;
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const { data: ev } = await supabase.from('events').select('id,slug,title,event_date,summary').eq('status', 'published').gte('event_date', today).order('event_date', { ascending: true }).limit(1);
+    const { data: ev } = await supabase.from('events').select('id,slug,title,event_date,summary').eq('status', 'published').eq('is_visible', true).gte('event_date', today).order('event_date', { ascending: true }).limit(1);
     const { data: setting } = await supabase.from('site_settings').select('setting_value').eq('setting_key', 'hero_announcement').maybeSingle();
     const box = $('#upcomingAnnouncement');
     if (box) {
@@ -103,12 +103,7 @@ async function loadPublishedContent() {
         box.append(badge, body, cta); box.hidden = false;
       }
     }
-    const { data: projects } = await supabase.from('projects').select('title,short_description,cover_image,category').in('status', ['ongoing', 'completed']).order('created_at', { ascending: false }).limit(6);
-    const host = $('#publishedProjects');
-    if (host && projects?.length) {
-      const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-      host.innerHTML = projects.map(x => `<article class="published-project-card">${x.cover_image ? `<img src="${esc(x.cover_image)}" alt="">` : ''}<div><small>${esc(x.category)}</small><h3>${esc(x.title)}</h3><p>${esc(x.short_description)}</p></div></article>`).join('');
-    }
+    /* Les anciens « projets » ont été migrés vers Actions & Événements (section ci-dessous). */
   } catch (e) { console.warn('Chargement du contenu publié indisponible', e); }
 }
 if (supabase && $('#upcomingAnnouncement')) loadPublishedContent();

@@ -95,3 +95,22 @@ Retour arrière : `supabase/rollback-v3.sql` (rétablit l'ancien comportement no
 - `annonce.html` : page de détail (« Découvrir ») ; galerie dans `event_images`, fichiers dans le bucket `club-media`.
 - `admin/admin-*.js` : modules Bénévoles, Gestion, Équipe dirigeante, Annonces & événements, Chat.
 - Les droits ne dépendent plus de `profiles.role` mais des tables `club_roles`, `user_roles`, `club_permissions` ; toutes les écritures passent par des fonctions serveur (`admin_set_role`, `admin_update_account`, `submit_volunteer_application`).
+
+## Mise à jour v5 — restructuration de l'administration, tableau de bord, hiérarchie, épinglage, audit
+
+### À faire dans Supabase (dans cet ordre)
+1. Sauvegarde, puis `migration-v3.sql` (si ce n'est pas déjà fait), puis **`supabase/migration-v4.sql`** (idempotente ; aucune donnée supprimée).
+2. Lire les messages `NOTICE` (reprise des anciens journaux, projets migrés).
+3. Les anciens « projets » sont **copiés** dans Actions & Événements (type « Action »), la table `projects` est conservée telle quelle (colonne `migrated_event_id`). Vérifiez-les dans *Actions & Événements* et publiez/masquez-les selon vos besoins.
+4. Pour masquer une archive historique du site (fichier `assets/events-data.js`), il suffit qu'un événement de même identifiant existe en base (seed-events.sql) avec le statut non publié ou « masqué ».
+5. Après migration, testez avec de vrais comptes : Super Admin A, Super Admin B, Responsable, élève (voir tests SQL manuels ci-dessous).
+
+### Tests SQL manuels recommandés (non exécutés dans l'environnement de développement)
+Connecté en tant que chaque utilisateur (SQL Editor → « Run as » ou API avec son jeton) :
+- `select admin_set_role('<autre super admin>', 'responsable', '{}')` → doit échouer (niveau égal).
+- `select admin_set_role('<soi-même>', 'eleve', '{}')` → doit échouer.
+- `select admin_set_role('<responsable>', 'benevole', '{}')` en Super Admin → doit réussir.
+- `select admin_set_role('<super admin>', 'eleve', '{}')` en Responsable (avec « management ») → doit échouer.
+- `select chat_set_pin('<id message>', true)` en Responsable → doit échouer ; en Admin → réussir.
+- `update chat_messages set pinned_at = now()` en client → doit échouer (déclencheur).
+- `delete from activity_logs` / `update activity_logs …` → doivent échouer pour tous les rôles.

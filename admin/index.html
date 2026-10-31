@@ -12,11 +12,9 @@
  <a href="../index.html" class="side-brand"><img src="../assets/branding/club-solidarite-logo.png" alt=""><span>Club Solidarité<small>ADMINISTRATION</small></span></a>
  <nav id="adminNav">
   <a class="selected" href="#dashboard" data-view="dashboard"><i data-lucide="layout-dashboard"></i> Tableau de bord</a>
+  <a href="#volunteers" data-view="volunteers"><i data-lucide="hand-heart"></i> Bénévoles <span class="badge" id="navPending" hidden>0</span></a>
   <a href="#members" data-view="members"><i data-lucide="users"></i> Membres</a>
-  <a href="#applications" data-view="applications"><i data-lucide="clipboard-list"></i> Candidatures <span class="badge" id="navPending" hidden>0</span></a>
-  <a href="#projects" data-view="projects"><i data-lucide="folder-kanban"></i> Projets &amp; Actions</a>
-  <a href="#volunteers" data-view="volunteers"><i data-lucide="hand-heart"></i> Bénévoles</a>
-  <a href="#events" data-view="events"><i data-lucide="calendar-days"></i> Annonces &amp; événements</a>
+  <a href="#events" data-view="events"><i data-lucide="calendar-days"></i> Actions &amp; Événements</a>
   <a href="#team" data-view="team"><i data-lucide="award"></i> Équipe dirigeante</a>
   <a href="#messages" data-view="messages"><i data-lucide="messages-square"></i> Chat du club</a>
   <a href="#management" data-view="management"><i data-lucide="shield-check"></i> Gestion</a>
@@ -41,15 +39,24 @@
  </header>
 
  <section class="admin-view" id="view-dashboard">
-  <div class="stat-grid">
-   <button class="stat" data-go="members" data-need="members,applications" type="button"><span class="stat-symbol ok"><i data-lucide="users"></i></span><div><small>Membres actifs</small><strong id="membersCount">—</strong></div></button>
-   <button class="stat" data-go="applications" data-need="applications,volunteers" type="button"><span class="stat-symbol wait"><i data-lucide="clipboard-list"></i></span><div><small>Candidatures en attente</small><strong id="appsCount">—</strong></div></button>
-   <button class="stat" data-go="events" data-need="events" type="button"><span class="stat-symbol"><i data-lucide="calendar-days"></i></span><div><small>Événements à venir</small><strong id="upcomingCount">—</strong></div></button>
-   <button class="stat" data-go="projects" data-need="projects" type="button"><span class="stat-symbol"><i data-lucide="folder-check"></i></span><div><small>Projets publiés</small><strong id="projectsCount">—</strong></div></button>
+  <div class="dash-head"><div><h2 id="dashHello">Bienvenue</h2><p id="dashDate" class="admin-help"></p></div><div class="dash-tools"><div class="seg" id="dashRange" role="group" aria-label="Période des graphiques"><button type="button" data-m="6">6 mois</button><button type="button" class="on" data-m="12">12 mois</button></div><button class="btn ghost sm" id="dashRefresh" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div></div>
+  <div class="dash-stats" id="dashStats"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  <div class="dash-charts" id="dashCharts">
+   <div class="admin-panel chart-card" data-chart="received"><div class="panel-title"><h2><i data-lucide="inbox"></i> Candidatures reçues</h2></div><div class="chart-body"></div></div>
+   <div class="admin-panel chart-card" data-chart="split"><div class="panel-title"><h2><i data-lucide="pie-chart"></i> Répartition des candidatures</h2></div><div class="chart-body"></div></div>
+   <div class="admin-panel chart-card" data-chart="volunteers"><div class="panel-title"><h2><i data-lucide="trending-up"></i> Évolution des bénévoles</h2></div><div class="chart-body"></div></div>
+   <div class="admin-panel chart-card" data-chart="activity"><div class="panel-title"><h2><i data-lucide="calendar-check"></i> Activité du club</h2></div><div class="chart-body"></div></div>
   </div>
-  <div class="admin-panel" data-need="applications,volunteers">
-   <div class="panel-title"><h2><i data-lucide="clipboard-list"></i> Dernières candidatures</h2><button data-go="applications" class="btn ghost sm" type="button">Voir tout <i data-lucide="arrow-right"></i></button></div>
-   <div id="dashboardApplications" class="rows"><div class="skeleton"></div><div class="skeleton"></div></div>
+  <div class="dash-cols">
+   <div class="admin-panel" id="dashActivityPanel"><div class="panel-title"><h2><i data-lucide="activity"></i> Activité récente</h2><button data-go="management" data-need="management" class="btn ghost sm" type="button">Journal complet <i data-lucide="arrow-right"></i></button></div><div id="dashActivity" class="rows"><div class="skeleton"></div></div></div>
+   <div class="admin-panel" data-need="events"><div class="panel-title"><h2><i data-lucide="calendar-clock"></i> Prochains événements</h2><button data-go="events" class="btn ghost sm" type="button">Gérer <i data-lucide="arrow-right"></i></button></div><div id="dashUpcoming" class="rows"><div class="skeleton"></div></div></div>
+  </div>
+  <div class="dash-cols">
+   <div class="admin-panel" data-need="volunteers,applications"><div class="panel-title"><h2><i data-lucide="clipboard-list"></i> Dernières candidatures</h2><button data-go="volunteers" class="btn ghost sm" type="button">Voir tout <i data-lucide="arrow-right"></i></button></div><div id="dashboardApplications" class="rows"><div class="skeleton"></div></div></div>
+   <div class="dash-side">
+    <div class="admin-panel"><div class="panel-title"><h2><i data-lucide="zap"></i> Raccourcis</h2></div><div class="shortcuts" id="dashShortcuts"></div></div>
+    <div class="admin-panel"><div class="panel-title"><h2><i data-lucide="bar-chart-3"></i> Statistiques globales</h2></div><dl class="global-stats" id="dashGlobal"></dl></div>
+   </div>
   </div>
  </section>
 
@@ -61,56 +68,32 @@
   </div>
  </section>
 
- <section class="admin-view" id="view-applications" hidden>
-  <div class="admin-panel">
-   <div class="panel-title"><h2><i data-lucide="clipboard-list"></i> Candidatures reçues</h2><button class="btn ghost sm" id="refreshApplications" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div>
-   <div class="filters" id="appFilters"></div>
-   <div id="applicationsList" class="rows" style="gap:14px"></div>
-  </div>
- </section>
-
- <section class="admin-view" id="view-projects" hidden>
-  <div class="admin-panel" id="projectFormPanel">
-   <div class="panel-title"><h2><i data-lucide="folder-plus"></i> <span id="projectFormTitle">Créer un projet</span></h2></div>
-   <form id="projectForm" class="admin-form">
-    <input type="hidden" name="id">
-    <label>Nom du projet *<input name="title" required maxlength="140"></label>
-    <label>Catégorie<select name="category"><option>Solidarité</option><option>Éducation</option><option>Environnement</option><option>Santé</option><option>Culture</option></select></label>
-    <label class="wide">Description courte *<textarea name="short_description" required rows="2"></textarea></label>
-    <label class="wide">Description complète<textarea name="description" rows="4"></textarea></label>
-    <label>Photo de couverture<input name="cover_file" type="file" accept="image/png,image/jpeg,image/webp"></label>
-    <label>Statut<select name="status"><option value="draft">Brouillon</option><option value="ongoing">Publié / en cours</option><option value="completed">Publié / terminé</option><option value="archived">Archivé</option></select></label>
-    <div class="wide admin-actions"><button class="btn" type="submit"><i data-lucide="save"></i> Enregistrer le projet</button><button class="btn ghost" type="button" id="resetProject">Annuler</button></div>
-    <p class="wide form-msg" id="projectStatus" role="status"></p>
-   </form>
-  </div>
-  <div class="admin-panel">
-   <div class="panel-title"><h2><i data-lucide="folder-kanban"></i> Projets &amp; actions</h2><button class="btn ghost sm" id="refreshProjects" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div>
-   <div id="projectsList" class="rows"></div>
-  </div>
- </section>
-
  <section class="admin-view" id="view-events" hidden>
   <div class="admin-panel" id="eventFormPanel">
-   <div class="panel-title"><h2><i data-lucide="calendar-plus"></i> <span id="eventFormTitle">Ajouter une annonce / un événement à venir</span></h2></div>
+   <div class="panel-title"><h2><i data-lucide="calendar-plus"></i> <span id="eventFormTitle">Créer une action ou un événement</span></h2></div>
    <form id="eventForm" class="admin-form" novalidate>
     <input type="hidden" name="id">
-    <label class="wide">Titre de l’annonce *<input name="title" required maxlength="140"></label>
-    <label>Date de l’événement *<input type="date" name="event_date" required></label>
-    <label>Lieu<input name="location" maxlength="160"></label>
-    <label>Catégorie<select name="category"><option>Solidarité</option><option>Éducation</option><option>Environnement</option><option>Santé</option><option>Culture</option></select></label>
-    <label>Date de publication <small class="hint">(facultatif — aujourd’hui par défaut)</small><input type="date" name="published_date"></label>
-    <label class="wide">Annonce courte * <small class="hint">affichée sur l’accueil</small><textarea name="summary" required rows="2" maxlength="300"></textarea></label>
-    <label class="wide">Description complète * <small class="hint">affichée sur la page « Découvrir » — séparez les paragraphes par une ligne vide</small><textarea name="description" required rows="7"></textarea></label>
+    <label class="wide">Titre *<input name="title" required maxlength="140"></label>
+    <label>Type<select name="kind"><option value="event">Événement</option><option value="action">Action</option></select></label>
+    <label>Catégorie<select name="category"><option>Solidarité</option><option>Éducation</option><option>Environnement</option><option>Santé</option><option>Culture</option><option>Travaux et rénovation</option></select></label>
+    <label>Date de début *<input type="date" name="event_date" required></label>
+    <label>Heure de début <small class="hint">(facultatif)</small><input type="time" name="start_time"></label>
+    <label>Date de fin <small class="hint">(facultatif — si plusieurs jours)</small><input type="date" name="end_date"></label>
+    <label>Heure de fin <small class="hint">(facultatif)</small><input type="time" name="end_time"></label>
+    <label class="wide">Lieu<input name="location" maxlength="160"></label>
+    <label class="wide">Résumé * <small class="hint">affiché sur les cartes du site</small><textarea name="summary" required rows="2" maxlength="300"></textarea></label>
+    <label class="wide">Description détaillée * <small class="hint">séparez les paragraphes par une ligne vide</small><textarea name="description" required rows="7"></textarea></label>
     <div class="wide media-box"><div class="media-head"><strong>Image principale <small class="hint">(facultatif — JPG, PNG, WebP, 5 Mo max)</small></strong><input name="cover_file" id="coverFile" type="file" accept="image/png,image/jpeg,image/webp"></div><div id="coverPreview" class="media-grid"></div></div>
     <div class="wide media-box"><div class="media-head"><strong>Galerie de photos <small class="hint">(facultatif — 12 photos max)</small></strong><input name="gallery_files" id="galleryFiles" type="file" accept="image/png,image/jpeg,image/webp" multiple></div><div id="galleryPreview" class="media-grid"></div></div>
-    <label>Statut de publication<select name="status"><option value="draft">Brouillon (invisible du public)</option><option value="published">Publié</option></select></label>
+    <label>Statut de publication<select name="status"><option value="draft">Brouillon (invisible du public)</option><option value="published">Publié</option><option value="archived">Archivé (masqué)</option></select></label>
+    <label>Visibilité sur le site<select name="is_visible"><option value="true">Visible (à venir, puis archives automatiquement)</option><option value="false">Masqué du site public</option></select></label>
+    <label>Date de publication <small class="hint">(facultatif — aujourd’hui par défaut)</small><input type="date" name="published_date"></label>
     <div class="wide admin-actions"><button class="btn" type="submit"><i data-lucide="save"></i> Enregistrer</button><button class="btn ghost" type="button" id="previewEvent"><i data-lucide="eye"></i> Aperçu</button><button class="btn ghost" type="button" id="resetEvent">Annuler</button></div>
     <p class="wide form-msg" id="eventStatus" role="status"></p>
    </form>
   </div>
   <div class="admin-panel">
-   <div class="panel-title"><h2><i data-lucide="calendar-days"></i> Annonces &amp; événements</h2><button class="btn ghost sm" id="refreshEvents" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div>
+   <div class="panel-title"><h2><i data-lucide="calendar-days"></i> Actions &amp; Événements</h2><div class="admin-actions"><div class="seg" id="eventPhase" role="group" aria-label="Filtrer"><button type="button" class="on" data-p="">Tous</button><button type="button" data-p="upcoming">À venir</button><button type="button" data-p="ongoing">En cours</button><button type="button" data-p="past">Passés</button><button type="button" data-p="draft">Brouillons</button></div><button class="btn ghost sm" id="refreshEvents" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div></div>
    <div id="eventsList" class="rows"></div>
   </div>
  </section>
@@ -122,7 +105,7 @@
     <input id="volSearch" type="search" placeholder="Rechercher (nom, e-mail, classe…)" aria-label="Rechercher un candidat">
     <select id="volStatus" aria-label="Filtrer par statut"><option value="">Tous les statuts</option><option value="pending">En attente</option><option value="accepted">Acceptée</option><option value="rejected">Refusée</option></select>
     <select id="volGrade" aria-label="Filtrer par niveau"><option value="">Tous les niveaux</option><option>Tronc Commun</option><option>1 Bac</option><option>2 Bac</option></select>
-    <select id="volArea" aria-label="Filtrer par domaine"><option value="">Tous les domaines</option></select>
+    
     <select id="volSort" aria-label="Trier par date"><option value="desc">Plus récentes d’abord</option><option value="asc">Plus anciennes d’abord</option></select>
    </div>
    <div class="table-wrap"><table class="data-table" id="volTable"><thead><tr><th>Candidat</th><th>Niveau · Filière · Classe</th><th>Domaines</th><th>Date</th><th>Statut</th><th class="r">Actions</th></tr></thead><tbody id="volBody"></tbody></table></div>
@@ -164,15 +147,19 @@
    <div class="pager" id="accPager"></div>
   </div>
   <div class="admin-panel">
-   <div class="panel-title"><h2><i data-lucide="scroll-text"></i> Journal d’audit <small class="hint" style="margin-left:6px">30 dernières actions sensibles</small></h2></div>
-   <div id="auditList" class="rows"></div>
+   <div class="panel-title"><h2><i data-lucide="scroll-text"></i> Journal d’audit</h2><button class="btn ghost sm" id="refreshAudit" type="button"><i data-lucide="refresh-cw"></i> Actualiser</button></div>
+   <p class="admin-help">Chaque opération sensible est enregistrée avec son auteur, sa cible et la date exacte. Le journal ne peut être ni modifié ni supprimé.</p>
+   <div class="toolbar"><input id="auditSearch" type="search" placeholder="Rechercher un nom ou un type d’action…" aria-label="Rechercher dans le journal"></div>
+   <div class="seg seg-wrap" id="auditCats" role="group" aria-label="Catégories"><button type="button" class="on" data-cat="">Toutes les activités</button><button type="button" data-cat="volunteers">Bénévoles</button><button type="button" data-cat="members">Membres</button><button type="button" data-cat="roles">Rôles et permissions</button><button type="button" data-cat="events">Actions &amp; Événements</button><button type="button" data-cat="chat">Chat</button><button type="button" data-cat="settings">Paramètres</button></div>
+   <div id="auditList" class="audit-list"></div><div class="pager"><span id="auditCount"></span><button class="btn ghost sm" id="auditMore" type="button" hidden>Charger plus</button></div>
   </div>
  </section>
 
  <section class="admin-view" id="view-messages" hidden>
   <div class="admin-panel">
    <div class="panel-title"><h2><i data-lucide="messages-square"></i> Chat du club</h2></div>
-   <p class="admin-help">Conversation réservée aux comptes disposant de la permission « Chat ». Vous pouvez modifier ou supprimer vos propres messages.</p>
+   <p class="admin-help">Conversation réservée aux comptes disposant de la permission « Chat ». Vous pouvez modifier ou supprimer vos propres messages. Les Super Admin et Admin peuvent épingler des messages importants.</p>
+   <div class="pinned-box" id="pinnedBox" hidden><button type="button" class="pinned-toggle" id="pinnedToggle" aria-expanded="true"><i data-lucide="pin"></i> <span id="pinnedTitle">Messages épinglés</span> <i data-lucide="chevron-down"></i></button><div id="pinnedList" class="pinned-list"></div></div>
    <div id="chatMessages" class="chat-messages"></div>
    <div id="typingIndicator" class="typing-indicator" aria-live="polite" hidden></div>
    <form id="chatForm" class="chat-form"><input name="message" required maxlength="2000" placeholder="Écrire un message au club…" autocomplete="off"><button class="btn" type="submit"><i data-lucide="send"></i> Envoyer</button></form>

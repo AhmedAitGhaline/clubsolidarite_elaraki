@@ -1,7 +1,7 @@
 /* Parcours « Devenir bénévole » : s'adapte à l'état de connexion.
    - non connecté : bloc « compte de l'établissement » (création / connexion)
    - connecté     : carte d'identité scolaire + formulaire de candidature + suivi du statut */
-import { AREAS, APP_STATUS, esc } from './academics.js';
+import { APP_STATUS, esc } from './academics.js';
 
 const $ = s => document.querySelector(s);
 const db = window.CLUB_AUTH;
@@ -73,17 +73,14 @@ async function render(session, flash = '') {
 }
 
 function formHtml(app, blocked) {
-  const a = app || {}, chosen = new Set(a.areas || []);
+  const a = app || {};
   const label = app ? (app.status === 'rejected' ? 'Soumettre à nouveau' : 'Mettre à jour ma candidature') : 'Envoyer ma candidature';
   return `<form id="volunteerForm" class="vol-form" novalidate>
     <fieldset ${blocked ? 'disabled' : ''}>
     <div class="vol-grid">
       <label><span class="lt">Téléphone <span class="optional">(facultatif)</span></span><input type="tel" name="phone" maxlength="30" autocomplete="tel" placeholder="06 00 00 00 00" value="${esc(a.phone || '')}"><small class="fe" data-for="phone"></small></label>
       <label><span class="lt">Disponibilités <span class="optional">(facultatif)</span></span><input name="availability" maxlength="500" placeholder="Ex. mercredi après-midi, samedi matin" value="${esc(a.availability || '')}"></label>
-      <fieldset class="vol-areas full"><legend>Domaines dans lesquels vous souhaitez vous impliquer *</legend>
-        <div class="area-grid">${AREAS.map((x, i) => `<label class="area"><input type="checkbox" name="areas" value="${esc(x)}" ${chosen.has(x) ? 'checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>
-        <label class="area-other" ${chosen.has('Autre') ? '' : 'hidden'}>Précisez « Autre » *<input name="areas_other" maxlength="200" value="${esc(a.areas_other || '')}"></label>
-        <small class="fe" data-for="areas"></small></fieldset>
+      <label class="full">Domaines dans lesquels vous souhaitez vous impliquer *<textarea name="interest" rows="3" maxlength="1500" required placeholder="Décrivez les domaines dans lesquels vous souhaitez vous impliquer...">${esc(a.interest_area || '')}</textarea><small class="fe" data-for="interest"></small></label>
       <label class="full">Motivations *<textarea name="motivation" rows="4" maxlength="2000" placeholder="Pourquoi souhaitez-vous rejoindre le club ? (15 caractères minimum)">${esc(a.motivation || '')}</textarea><span class="counter"><span id="motivCount">${(a.motivation || '').length}</span>/2000</span><small class="fe" data-for="motivation"></small></label>
       <label class="full"><span class="lt">Compétences que vous pouvez apporter <span class="optional">(facultatif)</span></span><textarea name="skills" rows="2" maxlength="1000" placeholder="Ex. dessin, photographie, montage vidéo, organisation, langues…">${esc(a.skills || '')}</textarea></label>
       <label class="full"><span class="lt">Informations complémentaires <span class="optional">(facultatif)</span></span><textarea name="extra_info" rows="2" maxlength="1500">${esc(a.extra_info || '')}</textarea></label>
@@ -104,27 +101,21 @@ function bindForm(session, app, profile, blocked) {
   const err = (k, m) => { const el = form.querySelector(`.fe[data-for="${k}"]`); if (el) el.textContent = m || ''; };
   const say = (m, ok = false) => { status.textContent = m; status.className = 'vol-form-status ' + (m ? (ok ? 'ok' : 'err') : ''); };
   form.elements.motivation.addEventListener('input', () => { $('#motivCount').textContent = form.elements.motivation.value.length; });
-  form.querySelectorAll('input[name="areas"]').forEach(c => c.addEventListener('change', () => {
-    const other = [...form.querySelectorAll('input[name="areas"]')].find(x => x.value === 'Autre').checked;
-    form.querySelector('.area-other').hidden = !other;
-  }));
   form.addEventListener('submit', async e => {
     e.preventDefault();
     if (sending || blocked) return;                       // empêche les doubles envois
-    ['phone', 'areas', 'motivation', 'consent'].forEach(k => err(k, ''));
-    const f = new FormData(form), areas = f.getAll('areas'), motivation = String(f.get('motivation') || '').trim(), phone = String(f.get('phone') || '').trim();
+    ['phone', 'interest', 'motivation', 'consent'].forEach(k => err(k, ''));
+    const f = new FormData(form), interest = String(f.get('interest') || '').trim(), motivation = String(f.get('motivation') || '').trim(), phone = String(f.get('phone') || '').trim();
     let ok = true;
     if (phone && !/^[0-9 +().-]{6,30}$/.test(phone)) { err('phone', 'Numéro de téléphone invalide.'); ok = false; }
-    if (!areas.length) { err('areas', 'Choisissez au moins un domaine.'); ok = false; }
-    else if (areas.includes('Autre') && !String(f.get('areas_other') || '').trim()) { err('areas', 'Précisez le domaine « Autre ».'); ok = false; }
+    if (interest.length < 5) { err('interest', 'Décrivez les domaines dans lesquels vous souhaitez vous impliquer.'); ok = false; }
     if (motivation.length < 15) { err('motivation', 'Décrivez vos motivations (15 caractères minimum).'); ok = false; }
     if (!f.get('consent')) { err('consent', 'Votre accord est nécessaire pour traiter la candidature.'); ok = false; }
     if (!ok) { say('Veuillez corriger les champs signalés.'); form.querySelector('.fe:not(:empty)')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
     sending = true; btn.disabled = true; const old = btn.innerHTML; btn.textContent = 'Envoi en cours…'; say('');
     try {
       const { data, error } = await db.rpc('submit_volunteer_application', {
-        p_phone: phone || null, p_motivation: motivation, p_skills: String(f.get('skills') || '').trim() || null, p_areas: areas,
-        p_areas_other: areas.includes('Autre') ? String(f.get('areas_other') || '').trim() : null,
+        p_phone: phone || null, p_motivation: motivation, p_skills: String(f.get('skills') || '').trim() || null, p_interest: interest,
         p_availability: String(f.get('availability') || '').trim() || null, p_extra_info: String(f.get('extra_info') || '').trim() || null, p_consent: true
       });
       if (error) throw error;

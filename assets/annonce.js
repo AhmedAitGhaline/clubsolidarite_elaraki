@@ -13,18 +13,20 @@ async function main() {
   const db = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key);
   // Seules les annonces PUBLIÉES sont affichées (en plus de la politique RLS côté base).
-  const { data: ev, error } = await db.from('events').select('id,title,summary,description,event_date,published_at,category,location,cover_image')
-    .eq('status', 'published').eq(isId ? 'id' : 'slug', key).maybeSingle();
+  const { data: ev, error } = await db.from('events').select('id,title,summary,description,event_date,end_date,start_time,end_time,kind,published_at,category,location,cover_image')
+      .eq('status', 'published').eq('is_visible', true).eq(isId ? 'id' : 'slug', key).maybeSingle();
   if (error) return state('Chargement impossible', 'Une erreur est survenue. Réessayez plus tard.');
-  if (!ev) return state('Annonce introuvable', 'Cette annonce n’existe pas ou n’est plus publiée.');
+  if (!ev) return state('Annonce introuvable', 'Cette page n’existe pas ou n’est plus publiée.');
   const { data: imgs } = await db.from('event_images').select('image_url,alt_text,caption,sort_order').eq('event_id', ev.id).order('sort_order', { ascending: true });
   const gallery = (imgs || []).map(i => ({ src: i.image_url, alt: i.alt_text || ev.title, caption: i.caption || '' }));
   const cover = ev.cover_image || '';
   const dateSrc = ev.published_at || ev.event_date;
   const fmt = d => d ? new Date(d.length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const now = Date.now(), st = new Date(`${ev.event_date}T${(ev.start_time || '00:00').slice(0, 5)}:00`).getTime(), en = new Date(`${ev.end_date || ev.event_date}T${(ev.end_time || '23:59').slice(0, 5)}:59`).getTime();
+  const phaseTag = ev.event_date ? `<span class="annonce-tag ${now < st ? '' : now <= en ? 'live' : 'past'}">${now < st ? 'À venir' : now <= en ? 'En cours' : 'Archive'}</span>` : '';
   document.title = `${ev.title} — Club de Solidarité ELARAKI`;
   root.innerHTML = `${cover ? `<div class="annonce-cover"><img src="${esc(cover)}" alt="${esc(ev.title)}"></div>` : ''}
-    <header class="annonce-head"><div class="annonce-meta">${ev.category ? `<span class="annonce-tag">${esc(ev.category)}</span>` : ''}${ev.event_date ? `<span>📅 ${esc(fmt(ev.event_date))}</span>` : ''}${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}</div>
+    <header class="annonce-head"><div class="annonce-meta">${ev.kind === 'action' ? '<span class="annonce-tag">Action</span>' : ''}${ev.category ? `<span class="annonce-tag">${esc(ev.category)}</span>` : ''}${ev.event_date ? `<span>📅 ${esc(fmt(ev.event_date))}${ev.end_date && ev.end_date !== ev.event_date ? ' → ' + esc(fmt(ev.end_date)) : ''}</span>` : ''}${ev.start_time ? `<span>🕒 ${esc(ev.start_time.slice(0, 5))}${ev.end_time ? ' – ' + esc(ev.end_time.slice(0, 5)) : ''}</span>` : ''}${phaseTag}${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}</div>
     <h1>${esc(ev.title)}</h1>${ev.summary ? `<p class="annonce-lead">${esc(ev.summary)}</p>` : ''}${ev.published_at ? `<small class="annonce-pub">Publiée le ${esc(fmt(ev.published_at))}</small>` : ''}</header>
     <div class="annonce-body">${paragraphs(ev.description) || ''}</div>
     ${gallery.length ? `<section class="annonce-gallery" aria-label="Photos"><h2>Photos</h2><div class="gallery-grid">${gallery.map((g, i) => `<button type="button" data-i="${i}" aria-label="Agrandir la photo ${i + 1}"><img src="${esc(g.src)}" alt="${esc(g.alt)}" loading="lazy"></button>`).join('')}</div></section>` : ''}`;

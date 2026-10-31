@@ -25,3 +25,4 @@
 .lb-close{top:16px;right:16px}.lb-nav{top:50%;transform:translateY(-50%)}.lb-nav.prev{left:14px}.lb-nav.next{right:14px}.lb-nav[hidden]{display:none}
 .lb-count{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font-size:13px}
 @media(max-width:600px){.gallery-grid{grid-template-columns:1fr 1fr}.annonce-top .school-brand img{height:38px}}
+.annonce-tag.live{background:#dcfce7;color:#15803d}.annonce-tag.past{background:#eef2f7;color:#64748b}

@@ -1,6 +1,7 @@
 /* Gestion des comptes : rôles et permissions. L'interface ne fait que refléter les règles ;
    admin_set_role / admin_update_account (SECURITY DEFINER) les appliquent côté serveur. */
 import {TRACKS} from '../assets/academics.js';
+import {render as renderLog, CAT_PATTERNS, actionsMatching} from './audit-format.js';
 export function init(ctx) {
   const {db, access, $, esc, icons, ok, fail, busy, dialog, askConfirm, dateFr, empty, skeleton} = ctx;
   const PAGE = 15; let accounts = [], roles = [], permCatalog = [], page = 1;
@@ -10,7 +11,8 @@ export function init(ctx) {
   const level = a => [a.grade_level, a.track, a.class_number && 'classe ' + a.class_number].filter(Boolean).join(' · ') || '—';
   const effective = a => a.role_key === 'super_admin' ? permCatalog.map(p => p.perm_key) : [...new Set([...(roleOf(a.role_key).default_permissions || []), ...(a.permissions || [])])];
   const accessBadge = a => { const n = effective(a).length; return a.role_key === 'super_admin' ? '<span class="access-badge full">Accès complet</span>' : n ? `<span class="access-badge limited">${n} module${n > 1 ? 's' : ''}</span>` : '<span class="access-badge none">Aucun accès admin</span>'; };
-  const canEdit = a => isSuper || (a.user_id !== ctx.session.user.id && a.role_rank < myRank());   // simple indication ; la base décide
+  /* Hiérarchie stricte (aucune exception, Super Admin compris) : on ne modifie que les niveaux STRICTEMENT inférieurs. La base applique la même règle. */
+  const canEdit = a => a.user_id !== ctx.session.user.id && a.role_rank < myRank();
 
   function filtered() {
     const q = $('#accSearch').value.trim().toLowerCase(), r = $('#accRole').value, s = $('#accSort').value;
@@ -28,13 +30,13 @@ export function init(ctx) {
 
   async function manage(a) {
     const editable = canEdit(a), inherited = new Set(roleOf(a.role_key).default_permissions || []);
-    const roleOpts = roles.filter(r => isSuper || r.rank < myRank() || r.role_key === a.role_key).sort((x, y) => y.rank - x.rank).map(r => `<option value="${esc(r.role_key)}">${esc(r.label)}</option>`).join('');
+    const roleOpts = roles.filter(r => r.rank < myRank() || (isSuper && r.rank === myRank()) || r.role_key === a.role_key).sort((x, y) => y.rank - x.rank).map(r => `<option value="${esc(r.role_key)}">${esc(r.label)}</option>`).join('');
     const permBox = (p, own) => { const inh = inherited.has(p.perm_key), locked = !isSuper && !myPerms.has(p.perm_key); return `<label class="${inh ? 'inherited' : locked ? 'locked' : ''}"><input type="checkbox" value="${esc(p.perm_key)}" ${inh || own ? 'checked' : ''} ${inh || locked || !editable ? 'disabled' : ''}> ${esc(p.label)}${inh ? ' <small>(rôle)</small>' : ''}</label>`; };
     const body = `<div class="detail-list"><section><b>E-mail</b><span>${esc(a.email)}</span></section><section><b>Compte créé le</b><span>${a.account_created_at ? dateFr(a.account_created_at) : '—'}</span></section><section><b>Dernière connexion</b><span>${a.last_sign_in_at ? dateFr(a.last_sign_in_at) : 'Jamais'}</span></section><section><b>Fonctions au club</b><span>${esc(a.functions.join(', ') || '—')}</span></section></div>
       <div class="f-row"><b>Informations du compte</b><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="text" id="mgFirst" placeholder="Prénom" maxlength="80" value="${esc(a.first_name)}" ${editable ? '' : 'disabled'}><input type="text" id="mgLast" placeholder="Nom" maxlength="80" value="${esc(a.last_name)}" ${editable ? '' : 'disabled'}><select id="mgGrade" ${editable ? '' : 'disabled'}><option value="">Niveau —</option>${Object.keys(TRACKS).map(g => `<option>${g}</option>`).join('')}</select><select id="mgTrack" ${editable ? '' : 'disabled'}></select><input type="text" id="mgClass" placeholder="Classe" maxlength="20" value="${esc(a.class_number)}" ${editable ? '' : 'disabled'}></div></div>
       <div class="f-row"><label for="mgRole">Rôle</label><select id="mgRole" ${editable ? '' : 'disabled'}>${roleOpts}</select></div>
       <div class="f-row"><b>Permissions par module</b><div class="perm-grid" id="mgPerms">${permCatalog.map(p => permBox(p, (a.permissions || []).includes(p.perm_key))).join('')}</div></div>
-      ${editable ? '' : '<p class="admin-help">Vous ne pouvez pas modifier ce compte (rang égal ou supérieur, ou votre propre compte).</p>'}`;
+      ${editable ? '' : '<p class="admin-help">Vous ne pouvez pas modifier ce compte : son niveau est égal ou supérieur au vôtre, ou il s’agit de votre propre compte.</p>'}`;
     let ov;
     const fillTrack = () => { const g = ov.querySelector('#mgGrade').value, t = ov.querySelector('#mgTrack'); t.innerHTML = '<option value="">Filière —</option>' + (TRACKS[g] || []).map(x => `<option>${x}</option>`).join(''); };
     const res = await dialog({title: a.full_name || a.email, icon: 'user-cog', body, confirm: editable ? 'Enregistrer' : '', cancel: 'Fermer', wide: true, onOpen: o => {
@@ -60,18 +62,34 @@ export function init(ctx) {
     } catch (e) { fail('Modification refusée', e.message); await load(); }
   }
 
-  async function loadAudit() {
-    const host = $('#auditList');
-    const {data, error} = await db.from('activity_logs').select('id,action,entity_type,entity_id,details,created_at,profiles:actor_id(full_name,email)').order('created_at', {ascending: false}).limit(30);
+  /* ---- Journal d'audit ---- */
+  const AUDIT_PAGE = 40; let auditCat = '', auditQ = '', auditOffset = 0, auditTimer = null;
+  async function loadAudit(append = false) {
+    const host = $('#auditList'); if (!append) { auditOffset = 0; host.innerHTML = skeleton(3); }
+    let q = db.from('activity_logs').select('*', {count: 'exact'}).order('created_at', {ascending: false});
+    const parts = [];
+    if (auditCat) parts.push(...CAT_PATTERNS[auditCat].map(p => `action.like.${p}*`));
+    let query = q;
+    if (parts.length) query = query.or(parts.join(','));
+    if (auditQ) { const t = auditQ.replace(/[,()*%]/g, ' ').trim(), keys = actionsMatching(t); query = query.or([`actor_name.ilike.*${t}*`, `target_name.ilike.*${t}*`, keys.length ? `action.in.(${keys.join(',')})` : null].filter(Boolean).join(',')); }
+    const {data, error, count} = await query.range(auditOffset, auditOffset + AUDIT_PAGE - 1);
     if (error) { host.innerHTML = empty('alert-circle', 'Journal indisponible.'); return; }
-    const L = {'role.assigned': 'Rôle attribué', 'role.changed': 'Rôle modifié', 'role.deleted': 'Rôle supprimé', 'account.updated': 'Compte modifié', 'application.status': 'Statut de candidature', 'team.added': 'Équipe : ajout', 'team.changed': 'Équipe : modification', 'team.removed': 'Équipe : retrait'};
-    host.innerHTML = data.length ? data.map(l => `<div class="row audit-row"><div class="who"><strong>${esc(L[l.action] || l.action)}</strong><small>${esc(l.profiles?.full_name || l.profiles?.email || 'Système')} · ${esc(JSON.stringify(l.details || {}).slice(0, 140))}</small></div><span class="meta">${new Date(l.created_at).toLocaleString('fr-FR')}</span></div>`).join('') : empty('scroll-text', 'Aucune action enregistrée.');
+    const html = (data || []).map(renderLog).join('');
+    if (append) host.insertAdjacentHTML('beforeend', html); else host.innerHTML = html || empty('scroll-text', auditQ || auditCat ? 'Aucune opération ne correspond.' : 'Aucune action enregistrée.');
+    auditOffset += (data || []).length;
+    $('#auditCount').textContent = `${Math.min(auditOffset, count ?? auditOffset)} / ${count ?? auditOffset} opération(s)`;
+    $('#auditMore').hidden = auditOffset >= (count ?? 0);
+    icons();
   }
+  $('#auditCats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; auditCat = b.dataset.cat; $('#auditCats').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); loadAudit(); });
+  $('#auditSearch').addEventListener('input', e => { clearTimeout(auditTimer); auditTimer = setTimeout(() => { auditQ = e.target.value.trim(); loadAudit(); }, 300); });
+  $('#auditMore').onclick = () => loadAudit(true);
+  $('#refreshAudit').onclick = e => busy(e.currentTarget, async () => { await loadAudit(); ctx.ok('Journal actualisé'); });
 
   async function load() {
     $('#accBody').innerHTML = `<tr><td colspan="8">${skeleton(4)}</td></tr>`;
     const [acc, r, p] = await Promise.all([db.rpc('admin_list_accounts'), db.from('club_roles').select('*'), db.from('club_permissions').select('*').order('label')]);
-    if (acc.error || r.error || p.error) { $('#accBody').innerHTML = '<tr><td colspan="8" class="empty-cell">Chargement impossible.</td></tr>'; return fail('Gestion indisponible', (acc.error || r.error || p.error).message); }
+    if (acc.error || r.error || p.error) { $('#accBody').innerHTML = '<tr><td colspan="8" class="empty-cell">Chargement impossible.</td></tr>'; loadAudit(); return fail('Gestion indisponible', (acc.error || r.error || p.error).message); }
     accounts = acc.data || []; roles = r.data || []; permCatalog = p.data || [];
     const sel = $('#accRole'), cur = sel.value; sel.innerHTML = '<option value="">Tous les rôles</option>' + roles.sort((x, y) => y.rank - x.rank).map(x => `<option value="${esc(x.role_key)}">${esc(x.label)}</option>`).join(''); sel.value = cur;
     paint(); loadAudit();
