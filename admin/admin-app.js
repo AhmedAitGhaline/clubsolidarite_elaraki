@@ -216,7 +216,7 @@ $('#adminProfileForm').addEventListener('submit', async e => {
 });
 
 /* ============ Chargement des vues ============ */
-const MODULES = {dashboard:'./admin-dashboard.js', events:'./admin-events.js', volunteers:'./admin-volunteers.js', team:'./admin-team.js', messages:'./admin-chat.js', management:'./admin-management.js'};
+const MODULES = {dashboard:'./admin-dashboard.js?v=7', events:'./admin-events.js?v=7', volunteers:'./admin-volunteers.js?v=7', team:'./admin-team.js?v=7', messages:'./admin-chat.js?v=7', management:'./admin-management.js?v=7'};
 const loadedModules = {};
 const ctx = {db, session, access, can, canAny, $, $$, esc, icons, toast, ok, fail, busy, dialog, askConfirm, dateFr, chip, skeleton, empty, initials, query, fullName, formMsg, go, setPending, refreshPending, getName: () => displayName};
 async function loadView(v) {
